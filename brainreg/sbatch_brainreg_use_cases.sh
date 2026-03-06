@@ -1,4 +1,10 @@
 #!/usr/bin/env bash
+#
+# SLURM array job script: runs brainreg for a single image. Index comes from
+# SLURM_ARRAY_TASK_ID; the corresponding input path is read from the line in
+# LIST_FILE written by submit_brainreg.sh. Sources brainreg_config.sh from
+# SLURM_SUBMIT_DIR (the directory from which sbatch was run = script dir).
+#
 #SBATCH -p cpu
 #SBATCH -N 1
 #SBATCH -n 1
@@ -14,11 +20,18 @@ set -euo pipefail
 echo "HOST: $(hostname)"
 echo "START: $(date -Is)"
 
+# ------------------------------------------------------------------------------
+# Load config from the directory where sbatch was run (submit_brainreg.sh
+# does "cd SCRIPT_DIR" before sbatch, so this finds brainreg_config.sh)
+# ------------------------------------------------------------------------------
 SUBMIT_DIR="${SLURM_SUBMIT_DIR:?SLURM_SUBMIT_DIR not set}"
 source "${SUBMIT_DIR}/brainreg_config.sh"
 
-mkdir -p "${OUT_ROOT}"
+mkdir -p "${OUTPUT_DIR}"
 
+# ------------------------------------------------------------------------------
+# Environment
+# ------------------------------------------------------------------------------
 module purge
 module load brainglobe/2025-07-06
 
@@ -27,6 +40,9 @@ command -v brainreg >/dev/null || {
     exit 1
 }
 
+# ------------------------------------------------------------------------------
+# Resolve this array task: line TASK_ID in LIST_FILE is the input image path
+# ------------------------------------------------------------------------------
 TASK_ID="${SLURM_ARRAY_TASK_ID}"
 IMG_PATH="$(sed -n "${TASK_ID}p" "${LIST_FILE}")"
 
@@ -37,7 +53,7 @@ fi
 
 IMG_BASENAME="$(basename "${IMG_PATH}")"
 IMG_STEM="${IMG_BASENAME%.*}"
-OUT_DIR="${OUT_ROOT}/${IMG_STEM}"
+OUT_DIR="${OUTPUT_DIR}/${IMG_STEM}"
 mkdir -p "${OUT_DIR}"
 
 echo "------------------------------------------------------------"
@@ -47,6 +63,9 @@ echo "INPUT:    ${IMG_PATH}"
 echo "OUTPUT:   ${OUT_DIR}"
 echo "------------------------------------------------------------"
 
+# ------------------------------------------------------------------------------
+# Run brainreg (all options from brainreg_config.sh)
+# ------------------------------------------------------------------------------
 set -x
 
 brainreg \
