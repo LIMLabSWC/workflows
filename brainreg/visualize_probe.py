@@ -1,20 +1,26 @@
 #!/usr/bin/env python3
 
 """
-Visualize probe `.npy` tracks in brainrender and export an interactive HTML file.
+Visualize probe `.npy` tracks in brainrender and export an interactive HTML
+file.
 
-All `.npy` track files in the given directory are rendered. Brain regions are
-either supplied via `--regions` or automatically derived from the per‑probe
-CSV files (one CSV per probe/shank) using the "Region acronym" column.
+All `.npy` probe track files found in the brainreg output's
+`segmentation/atlas_space/tracks` directory are rendered as line-like actors.
+Brain regions are either supplied via `--regions` or automatically derived
+from the per‑probe CSV files (one CSV per probe/shank) using the
+"Region acronym" column. Optionally, additional custom region meshes can be
+overlaid from `.obj` files found in `segmentation/atlas_space/regions` (unless
+`--no-custom-regions` is passed).
 
 Usage:
-    python visualize_probe.py <atlas_name> <tracks_dir> <output_html> [--regions R1 R2 ...]
+    python visualize_probe.py <atlas_name> <brainreg_dir> <output_html> 
+    [--regions R1 R2 ...] [--no-custom-regions]
 
 Example:
     python visualize_probe.py \
         swc_female_rat_50um \
-        /path/to/tracks \
-        /path/to/out.html \
+        /path/to/brainreg_output \
+        ROI_1_probes.html \
         --regions M2 VLO LO
 """
 
@@ -46,11 +52,15 @@ parser = argparse.ArgumentParser(description="Brainrender probe visualization")
 
 parser.add_argument("atlas_name", type=str, help="Atlas name for brainrender")
 parser.add_argument(
-    "tracks_dir",
+    "brainreg_dir",
     type=str,
-    help="Directory containing probe `.npy` tracks and per‑probe CSV files",
+    help="Directory containing brainreg outputs",
 )
-parser.add_argument("output_html", type=str, help="Output HTML file path")
+parser.add_argument(
+    "output_file_name",
+    type=str,
+    help="Output HTML file name (saved under segmentation/)",
+)
 
 parser.add_argument(
     "--regions",
@@ -58,12 +68,54 @@ parser.add_argument(
     default=[],
     help="List of brain region acronyms to display (e.g. --regions M2 VLO LO)"
 )
-
+parser.add_argument(
+    "--no-custom-regions",
+    action="store_true",
+    help="Disable loading custom region meshes from atlas_space/regions",
+)
 args = parser.parse_args()
 
-atlas_name   = args.atlas_name
-resource_path = Path(args.tracks_dir)
-output_path   = Path(args.output_html)
+atlas_name = args.atlas_name
+brainreg_dir = Path(args.brainreg_dir)
+
+atlas_space_dir = brainreg_dir / "segmentation" / "atlas_space"
+tracks_dir = atlas_space_dir / "tracks"
+regions_dir = atlas_space_dir / "regions"
+
+output_path = brainreg_dir / "segmentation" / Path(args.output_file_name)
+
+def find_custom_region_meshes(custom_regions_dir: Path) -> list[Path]:
+    """
+    Discover custom `.obj` region meshes in custom_regions_dir.
+
+    Returns a sorted list of paths to `.obj` files. These paths can then be
+    added to the scene elsewhere, e.g.:
+
+        for obj_path in find_custom_region_meshes(...):
+            scene.add(str(obj_path), color="crimson", alpha=0.4)
+    """
+    custom_regions_dir = Path(custom_regions_dir)
+
+    if not custom_regions_dir.exists():
+        print(f"Custom regions directory does not exist: {custom_regions_dir}")
+        return []
+
+    obj_files = sorted(custom_regions_dir.glob("*.obj"))
+
+    print("\n" + "=" * 80)
+    print(" CUSTOM REGION MESHES")
+    print("=" * 80)
+
+    if not obj_files:
+        print(f"No .obj files found in: {custom_regions_dir}")
+        print("=" * 80 + "\n")
+        return []
+
+    for obj_path in obj_files:
+        print(f"  found: {obj_path.name}")
+
+    print("=" * 80 + "\n")
+    return obj_files
 
 
 def get_probe_regions(input_dir: Path) -> dict:
@@ -113,7 +165,11 @@ scene = Scene(atlas_name=atlas_name, title="implant")
 # ----------------------------
 # Determine brain regions to show
 # ----------------------------
-probe_regions = get_probe_regions(resource_path)
+probe_regions = get_probe_regions(tracks_dir)
+custom_region_files: list[Path] = []
+
+if not args.no_custom_regions and regions_dir.exists():
+    custom_region_files = find_custom_region_meshes(regions_dir)
 
 print("\n" + "=" * 80)
 print(" PROBE / REGION SUMMARY")
@@ -124,7 +180,7 @@ if probe_regions:
     for probe_name, acr_list in probe_regions.items():
         print(f"  {probe_name}: {', '.join(acr_list)}")
 else:
-    print(f"No region CSV files found in: {resource_path}")
+    print(f"No region CSV files found in: {tracks_dir}")
 
 print("-" * 80)
 
@@ -144,6 +200,12 @@ else:
     regions_to_show = ordered_union
     if regions_to_show:
         print(f"Using automatically derived regions: {', '.join(regions_to_show)}")
+        print("\n")
+        print(
+            "If you want to omit regions from this list, "
+            "rerun the script with the --regions flag to "
+            "specify the regions you want to show.",
+        )
     else:
         print("No regions could be derived from CSV files.")
 
@@ -152,14 +214,21 @@ print("=" * 80 + "\n")
 for reg in regions_to_show:
     scene.add_brain_region(reg, alpha=0.15)
 
+for obj_path in custom_region_files:
+    scene.add(str(obj_path), color="crimson", alpha=0.4)
+
 # ----------------------------
 # Load and add probe tracks
 # ----------------------------
-# Find all .npy files in the directory (regardless of prefix)
-track_files = sorted(resource_path.glob("*.npy"))
+if not tracks_dir.exists():
+    print(f"Tracks directory does not exist: {tracks_dir}")
+    sys.exit(1)
+
+# Find all .npy files in the tracks directory (regardless of prefix)
+track_files = sorted(tracks_dir.glob("*.npy"))
 
 if not track_files:
-    print(f"No .npy track files found in: {resource_path}")
+    print(f"No .npy track files found in: {tracks_dir}")
     sys.exit(1)
 
 for i, tf in enumerate(track_files, start=1):
