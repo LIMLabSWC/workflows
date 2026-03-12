@@ -90,13 +90,18 @@ export QBATCH_QUEUE="cpu"
 #------------------------------------------------------------------------------
 # 3a) Job packing / parallelism controls
 #
-# QBATCH_PPJ (Processes Per Job / jobs per node)
-#   - Controls how many tasks QBatch tries to pack into a single node allocation.
-#   - 15 here allows up to 15 tasks per node (adjust for your partition).
+# QBATCH_PPJ (jobs per node, as seen by QBatch)
+#   - Controls how many independent jobs QBatch *tries* to pack into a single node
+#     allocation.
+#   - Here we use PPJ=1 because each job already requests so much RAM (270G) that
+#     in practice it "owns" a whole big‑mem node; extra PPJ would not actually fit.
 #
 # QBATCH_CORES
 #   - How many CPU cores each QBatch-submitted job requests/assumes.
-#   - Setting to 1 means each job requests 1 CPU core.
+#   - This is passed through to SLURM as --cpus-per-task and to ANTs via
+#     OMP_NUM_THREADS / ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS / MKL_NUM_THREADS.
+#   - Setting this high (e.g. 24 on enc3 big‑mem nodes) makes each registration
+#     multi-threaded and uses all CPUs on the node you already paid for in RAM.
 #
 # QBATCH_CHUNKSIZE
 #   - Controls how many "units of work" are grouped into one submitted job.
@@ -109,8 +114,8 @@ export QBATCH_QUEUE="cpu"
 #
 # CHUNKSIZE 1 = one unit of work per submitted job (max granularity).
 #------------------------------------------------------------------------------
-export QBATCH_PPJ=15
-export QBATCH_CORES=1
+export QBATCH_PPJ=1
+export QBATCH_CORES=24
 export QBATCH_CHUNKSIZE=1
 
 #------------------------------------------------------------------------------
