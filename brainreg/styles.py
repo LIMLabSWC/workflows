@@ -6,12 +6,12 @@ Both the interactive viewer (`brainreg_viewer.py`) and the HTML exporter
 """
 
 REGION_ALPHA = 0.2         # main highlighted atlas regions
-ROOT_ALPHA = 0.2            # whole-brain outline
+ROOT_ALPHA = 0.2           # whole-brain outline
 ROOT_COLOR = "grey"
 
-CUSTOM_REGION_COLOR = "crimson"
-CUSTOM_REGION_ALPHA = 0.2
+CUSTOM_REGION_COLOR = "orangered"
+CUSTOM_REGION_ALPHA = 0.4
 
-PROBE_COLOR = "gold"
+PROBE_COLOR = "chartreuse"
 PROBE_RADIUS = 50
 

@@ -16,16 +16,16 @@ brainreg_config.sh
 submit_brainreg.sh                                              sbatch_brainreg_use_cases.sh
        │                                                                  │
        │  1. Sources config from SCRIPT_DIR (directory of submit script)  │  Run by SLURM as array job
-       │  2. Loads brainglobe module, checks atlas                         │  (one process per image).
-       │  3. Finds all .tif/.tiff under DATA_DIR                            │
-       │  4. Skips images that already have OUTPUT_DIR/<stem>/registered_  │  1. Sources config from
+       │  2. Loads brainglobe module, checks atlas                        │  (one process per image).
+       │  3. Finds all .tif/.tiff under DATA_DIR                          │
+       │  4. Skips images that already have OUTPUT_DIR/<stem>/registered_ │  1. Sources config from
        │     atlas.tiff                                                   │     SLURM_SUBMIT_DIR (must be
        │  5. Writes remaining paths to LIST_FILE (one per line)           │     the script dir; submit_brainreg
        │  6. cd to SCRIPT_DIR, then sbatch --array=1-N ./sbatch_...       │     does "cd SCRIPT_DIR" before
        │     so SLURM_SUBMIT_DIR = script dir                             │     sbatch to ensure this).
        │                                                                  │  2. Reads line SLURM_ARRAY_TASK_ID
        └─────────────────────────────────────────────────────────────────►│     from LIST_FILE → input image
-             Submits array job; each task runs sbatch_brainreg_use_cases   │  3. Runs brainreg for that image
+             Submits array job; each task runs sbatch_brainreg_use_cases  │  3. Runs brainreg for that image
              and sources config from SUBMIT_DIR to get LIST_FILE, etc.    │     into OUTPUT_DIR/<stem>/
 ```
 
@@ -57,11 +57,13 @@ Copy or symlink the three bash scripts (and optionally `visualize_probe.py`) int
 1. In your project folder: set `PROJECT_DIR` in `brainreg_config.sh` (e.g. `PROJECT_DIR="${HOME}/brainglobe_workingdir/use_cases_for_paper"`).
 2. Run `./submit_brainreg.sh` (from the project folder or from anywhere; the script will submit from the directory where the scripts live).
 3. For probe viz (HTML): `python probes_to_html.py <atlas> <brainreg_dir> <out.html> [--regions ...]`.
-4. For interactive viewer PNGs: set `ATLAS_NAME`, `BRAINREG_DIR`, and the camera parameters at the top
-   of `brainreg_viewer.py`, then run:
+4. For interactive viewer PNGs: configure `viewer_presets.json` (one entry per desired view, with
+   `BRAINREG_SUBDIR`, `REGIONS_TO_SHOW`, camera and slice parameters), then run:
 
    ```bash
-   python brainreg_viewer.py
+   python brainreg_viewer.py              # all presets
+   python brainreg_viewer.py --only-subject ROI-1      # filter by subject
+   python brainreg_viewer.py --only-subdir ds_MPX-R-0033_...  # filter by subdir
    ```
 
 Requires brainglobe environment (e.g. `module load brainglobe/2025-07-06`) and SLURM for the batch jobs.

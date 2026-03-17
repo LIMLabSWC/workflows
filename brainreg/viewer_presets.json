@@ -1,0 +1,105 @@
+[
+  {
+    "BRAINREG_SUBDIR": "ds_MPX-R-0033_250606_133230_25_25_ch02_chan_2_red",
+    "REGIONS_TO_SHOW": ["M2", "cc-ec-cing-dwm"],
+    "CAMERA_DISTANCE_FACTOR": 2.0,
+    "CAMERA_ROTATION_DEG": -45.0,
+    "CAMERA_ELEVATION_DEG": -15.0,
+    "SLICE_MODE": "none"
+  },
+  {
+    "BRAINREG_SUBDIR": "ds_MPX-R-0033_250606_133230_25_25_ch02_chan_2_red",
+    "REGIONS_TO_SHOW": ["M2", "cc-ec-cing-dwm"],
+    "CAMERA_DISTANCE_FACTOR": 2.0,
+    "CAMERA_ROTATION_DEG": -45.0,
+    "CAMERA_ELEVATION_DEG": -15.0,
+    "SLICE_MODE": "custom",
+    "PLANE_DEPTH": 0.4,
+    "CUSTOM_PLANE_NORMAL": [1.0, 0.0, 0.0]
+  },
+  {
+    "BRAINREG_SUBDIR": "ds_MPX-R-0033_250606_133230_25_25_ch02_chan_2_red",
+    "REGIONS_TO_SHOW": ["M2", "cc-ec-cing-dwm"],
+    "CAMERA_DISTANCE_FACTOR": 2.0,
+    "CAMERA_ROTATION_DEG": 45.0,
+    "CAMERA_ELEVATION_DEG": -15.0,
+    "SLICE_MODE": "custom",
+    "PLANE_DEPTH": 0.4,
+    "CUSTOM_PLANE_NORMAL": [1.0, 0.0, 0.0]
+  },
+  {
+    "BRAINREG_SUBDIR": "ds_MPX-R-0032_250606_132031_25_25_ch02_chan_2_red",
+    "REGIONS_TO_SHOW": ["M2", "cc-ec-cing-dwm"],
+    "CAMERA_DISTANCE_FACTOR": 2.0,
+    "CAMERA_ROTATION_DEG": -45.0,
+    "CAMERA_ELEVATION_DEG": -30.0,
+    "SLICE_MODE": "none"
+  },
+  {
+    "BRAINREG_SUBDIR": "ds_ROI-1_230620_102737_25_25_ch02_chan_2_red_2x4shankNPX",
+    "REGIONS_TO_SHOW": ["M2", "PrL", "MO", "IL", "S1-bf", "Am-u"],
+    "CAMERA_DISTANCE_FACTOR": 2.0,
+    "CAMERA_ROTATION_DEG": -45.0,
+    "CAMERA_ELEVATION_DEG": -30.0,
+    "SLICE_MODE": "none"
+  },
+  {
+    "BRAINREG_SUBDIR": "ds_ROI-1_230620_102737_25_25_ch02_chan_2_red_2x4shankNPX",
+    "REGIONS_TO_SHOW": ["M2", "PrL", "MO", "IL", "S1-bf", "Am-u"],
+    "CAMERA_DISTANCE_FACTOR": 2.0,
+    "CAMERA_ROTATION_DEG": -45.0,
+    "CAMERA_ELEVATION_DEG": -30.0,
+    "SLICE_MODE": "custom",
+    "PLANE_DEPTH": 0.4,
+    "CUSTOM_PLANE_NORMAL": [0.0, 0.0, -1.0]
+  },
+  {
+    "BRAINREG_SUBDIR": "ds_ROI-1_230620_102737_25_25_ch02_chan_2_red_2x4shankNPX",
+    "REGIONS_TO_SHOW": ["M2", "PrL", "MO", "IL", "S1-bf", "Am-u"],
+    "CAMERA_DISTANCE_FACTOR": 2.0,
+    "CAMERA_ROTATION_DEG": -45.0,
+    "CAMERA_ELEVATION_DEG": -30.0,
+    "SLICE_MODE": "custom",
+    "PLANE_DEPTH": 0.9,
+    "CUSTOM_PLANE_NORMAL": [0.0, 0.0, -1.0]
+  },
+  {
+    "BRAINREG_SUBDIR": "ds_ROI-1_230620_102737_25_25_ch02_chan_2_red_2x4shankNPX",
+    "REGIONS_TO_SHOW": ["M2", "PrL", "MO", "IL", "S1", "Am-u"],
+    "CAMERA_DISTANCE_FACTOR": 2.0,
+    "CAMERA_ROTATION_DEG": 45.0,
+    "CAMERA_ELEVATION_DEG": -30.0,
+    "SLICE_MODE": "custom",
+    "PLANE_DEPTH": 1.0,
+    "CUSTOM_PLANE_NORMAL": [0.0, 0.0, 1.0]
+  },
+  {
+    "BRAINREG_SUBDIR": "ds_ROI-2_220721_100551_25_25_ch02_chan_2_red_mCherryvirus2",
+    "REGIONS_TO_SHOW": ["Am-u", "S1-bf", "S2"],
+    "CAMERA_DISTANCE_FACTOR": 2.0,
+    "CAMERA_ROTATION_DEG": -45.0,
+    "CAMERA_ELEVATION_DEG": -30.0,
+    "SLICE_MODE": "none"
+  },
+  {
+    "BRAINREG_SUBDIR": "ds_ROI-2_220721_100551_25_25_ch02_chan_2_red_mCherryvirus2",
+    "REGIONS_TO_SHOW": ["Am-u", "S1-bf", "S2"],
+    "CAMERA_DISTANCE_FACTOR": 2.0,
+    "CAMERA_ROTATION_DEG": -45.0,
+    "CAMERA_ELEVATION_DEG": -30.0,
+    "SLICE_MODE": "custom",
+    "PLANE_DEPTH": 0.85,
+    "CUSTOM_PLANE_NORMAL": [1.0, 0.0, 0.0]
+  },
+  {
+    "BRAINREG_SUBDIR": "ds_ROI-2_220721_100551_25_25_ch02_chan_2_red_mCherryvirus2",
+    "REGIONS_TO_SHOW": ["Am-u", "S1-bf", "S2"],
+    "CAMERA_DISTANCE_FACTOR": 2.0,
+    "CAMERA_ROTATION_DEG": 45.0,
+    "CAMERA_ELEVATION_DEG": -30.0,
+    "SLICE_MODE": "custom",
+    "PLANE_DEPTH": 0.85,
+    "CUSTOM_PLANE_NORMAL": [1.0, 0.0, 0.0]
+  }
+]
+

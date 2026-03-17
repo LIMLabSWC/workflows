@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from pathlib import Path
+import argparse
 
 import numpy as np
 from brainrender import Scene, settings
@@ -16,10 +17,11 @@ from styles import (
 )
 
 # Global brainrender look via settings API (applies to all scenes)
-settings.LIGHTING = "soft"
-settings.SHADER_STYLE = "plastic"
+settings.LIGHTING = "default"
+settings.SHADER_STYLE = "cartoon"
 settings.SHOW_AXES = False
 settings.SCREENSHOT_TRANSPARENT_BACKGROUND = True
+
 
 def subject_from_folder(folder: Path) -> str:
     """Extract subject ID from a brainreg folder name like ds_SUBJECT_YYYYMMDD_..."""
@@ -48,253 +50,200 @@ BASE_DIR = Path(
     "/mnt/d/use_cases_for_paper/brainreg_outputs_swc_female_rat_50um/"
 )
 
-# Pick which subject to view (change this line only)
-BRAINREG_DIR = BASE_DIR / "ds_MPX-R-0033_250606_133230_25_25_ch02_chan_2_red"
-
-# Regions to highlight from the atlas M2, Cg1
-REGIONS_TO_SHOW = [
-    # "Am-u",
-    "M2",
-    # "S1-bf", 
-    #"S2", 
-    # "Cg1",
-    "cc-ec-cing-dwm",
-    # "PrL",
-    #"MO",
-    # "IL",
-]
-
-# Camera configuration (atlas-agnostic)
-# CAMERA_DISTANCE_FACTOR:
-#   - How far the camera sits from the atlas centre, as a multiple of the
-#     largest brain extent. Larger = further away.
-CAMERA_DISTANCE_FACTOR = 2.0
-
-# CAMERA_ROTATION_DEG:
-#   - Horizontal rotation around the brain, starting from a computed frontal
-#     baseline. Use range [-180, 180]: negative = rotate left, positive = rotate right.
-CAMERA_ROTATION_DEG = -45
-
-# CAMERA_ELEVATION_DEG:
-#   - Vertical tilt (degrees) in this atlas: 0 = level with centre.
-#     Negative values (e.g. -10 to -40) look from above, positive from below.
-#     Useful range ≈ [-60, 60].
-CAMERA_ELEVATION_DEG = -15
-
-# Slice mode:
-# - None or "none": no slicing
-# - "sagittal" / "frontal" / "horizontal": built‑in orthogonal planes
-# - "custom": one atlas-aware slice plane controlled by:
-#     * PLANE_DEPTH in [-1, 1] (position along slice axis)
-#     * CUSTOM_PLANE_NORMAL (orientation/direction of the cut)
-
-SLICE_MODE = "none" 
-
-# Normalized depth of the slicing plane within the atlas bounds (used when
-# SLICE_MODE == "custom"). This is in [0, 1] and is always measured *inwards
-# from the edge you are cutting from*, along the axis selected by
-# CUSTOM_PLANE_NORMAL:
-#   0.0 = exactly at that edge
-#   1.0 = at the centre along that axis
-# For example, with CUSTOM_PLANE_NORMAL = (0, 0, 1) (sagittal-like), a depth
-# of 0.7 places the plane 70% of the way from the left edge (zmin) towards the
-# centre; the half on the +z side of the plane is kept. Flipping the normal to
-# (0, 0, -1) instead places the plane 70% inwards from the right edge (zmax),
-# keeping the opposite half.
-PLANE_DEPTH = 0.4
-
-# Orientation of the custom plane (works for any atlas). Use one of:
-#   (1, 0, 0)  -> frontal-like (front/back split)
-#   (0, 1, 0)  -> horizontal-like (top/bottom split)
-#   (0, 0, 1)  -> sagittal-like (left/right split)
-# Flip the sign to invert which side is kept (e.g. (0, -1, 0)).
-CUSTOM_PLANE_NORMAL = (1.0, 0.0, 0.0)
+import json
 
 
+def render_one(preset: dict) -> None:
+    """
+    Render one PNG for the given preset configuration.
+    """
+    # Unpack preset parameters
+    brainreg_dir = BASE_DIR / preset["BRAINREG_SUBDIR"]
+    regions_to_show = preset["REGIONS_TO_SHOW"]
+    camera_distance_factor = preset["CAMERA_DISTANCE_FACTOR"]
+    camera_rotation_deg = preset["CAMERA_ROTATION_DEG"]
+    camera_elevation_deg = preset["CAMERA_ELEVATION_DEG"]
+    slice_mode = preset.get("SLICE_MODE", "none")
+    plane_depth = preset.get("PLANE_DEPTH", 0.0)
+    custom_plane_normal = tuple(preset.get("CUSTOM_PLANE_NORMAL", (0.0, 0.0, 1.0)))
 
-# ============================
-# SCENE CONSTRUCTION
-# ============================
+    atlas_space_dir = brainreg_dir / "segmentation" / "atlas_space"
+    tracks_dir = atlas_space_dir / "tracks"
+    regions_dir = atlas_space_dir / "regions"
 
-atlas_space_dir = BRAINREG_DIR / "segmentation" / "atlas_space"
-tracks_dir = atlas_space_dir / "tracks"
-regions_dir = atlas_space_dir / "regions"
+    if not tracks_dir.exists():
+        raise FileNotFoundError(f"Tracks directory not found: {tracks_dir}")
 
-if not tracks_dir.exists():
-    raise FileNotFoundError(f"Tracks directory not found: {tracks_dir}")
+    subject_id = subject_from_folder(brainreg_dir)
+    scene = Scene(atlas_name=ATLAS_NAME, title=subject_id)
 
-subject_id = subject_from_folder(BRAINREG_DIR)
-scene = Scene(atlas_name=ATLAS_NAME, title=subject_id)
+    # Atlas regions
+    for region in regions_to_show:
+        scene.add_brain_region(region, alpha=REGION_ALPHA)
 
+    # Soften the whole-brain outline so regions/probes stand out
+    if hasattr(scene, "root") and scene.root is not None:
+        scene.root.c(ROOT_COLOR).alpha(ROOT_ALPHA)
 
-# ============================
-# ATLAS REGIONS
-# ============================
-
-for region in REGIONS_TO_SHOW:
-    scene.add_brain_region(region, alpha=REGION_ALPHA)
-
-# Soften the whole-brain outline so regions/probes stand out
-if hasattr(scene, "root") and scene.root is not None:
-    scene.root.c(ROOT_COLOR).alpha(ROOT_ALPHA)
-
-    # Print atlas/root mesh bounds to help choose custom slice positions.
-    xmin, xmax, ymin, ymax, zmin, zmax = scene.root.bounds()
-    xmid = 0.5 * (xmin + xmax)
-    ymid = 0.5 * (ymin + ymax)
-    zmid = 0.5 * (zmin + zmax)
-    print(
-        "Atlas/root bounds:",
-        f"x=[{xmin:.1f}, {xmax:.1f}]",
-        f"y=[{ymin:.1f}, {ymax:.1f}]",
-        f"z=[{zmin:.1f}, {zmax:.1f}]",
-    )
-    print("Atlas/root center:", f"({xmid:.1f}, {ymid:.1f}, {zmid:.1f})")
-
-    # ============================
-    # CAMERAS (computed from atlas bounds)
-    # ============================
-    # Internal baseline azimuth for a frontal-like view. This is atlas-agnostic
-    # as long as x is left–right and z is anterior–posterior (BrainGlobe
-    # convention). Users normally control only CAMERA_ROTATION_DEG /
-    # CAMERA_DISTANCE_FACTOR / CAMERA_ELEVATION_DEG above.
-    _BASE_FRONTAL_AZIMUTH_DEG = 180.0
-
-    ACTIVE_CAMERA = create_camera(
-        (xmin, xmax, ymin, ymax, zmin, zmax),
-        distance_factor=CAMERA_DISTANCE_FACTOR,
-        base_frontal_azimuth_deg=_BASE_FRONTAL_AZIMUTH_DEG,
-        rotation_deg=CAMERA_ROTATION_DEG,
-        elevation_deg=CAMERA_ELEVATION_DEG,
-    )
-
-
-# ============================
-# PROBE TRACKS
-# ============================
-
-for npy_path in sorted(tracks_dir.glob("*.npy")):
-    coords = np.load(npy_path)
-    scene.add(
-        Points(
-            coords,
-            name=npy_path.stem,
-            colors=PROBE_COLOR,
-            radius=PROBE_RADIUS,
+        # Print atlas/root mesh bounds and compute camera
+        xmin, xmax, ymin, ymax, zmin, zmax = scene.root.bounds()
+        xmid = 0.5 * (xmin + xmax)
+        ymid = 0.5 * (ymin + ymax)
+        zmid = 0.5 * (zmin + zmax)
+        print(
+            f"{subject_id}:",
+            "bounds",
+            f"x=[{xmin:.1f}, {xmax:.1f}]",
+            f"y=[{ymin:.1f}, {ymax:.1f}]",
+            f"z=[{zmin:.1f}, {zmax:.1f}]",
         )
-    )
+        print(f"{subject_id}: centre=({xmid:.1f}, {ymid:.1f}, {zmid:.1f})")
 
-
-# ============================
-# CUSTOM SEGMENTED REGIONS
-# ============================
-
-if regions_dir.exists():
-    for obj_path in sorted(regions_dir.glob("*.obj")):
-        scene.add(str(obj_path), color=CUSTOM_REGION_COLOR, alpha=CUSTOM_REGION_ALPHA)
-
-
-if SLICE_MODE not in (None, "none"):
-    if SLICE_MODE == "custom":
-        # Use a custom plane defined by position and normal in atlas space.
-        # Position is computed from normalized coordinates (PLANE_NX/NY/NZ in [0, 1])
-        # and the current atlas/root bounds. brainrender.atlas.Atlas.get_plane
-        # takes `plane`, `pos`, and `norm`; we pass `norm` so that it doesn't
-        # try to look up a named plane.
-        if hasattr(scene, "root") and scene.root is not None:
-            xmin, xmax, ymin, ymax, zmin, zmax = scene.root.bounds()
-            # Map PLANE_DEPTH in [0, 1] to atlas coordinates along the primary
-            # axis of CUSTOM_PLANE_NORMAL (x, y, or z), always measured from
-            # the edge you are "cutting from" towards the centre.
-            xmid = 0.5 * (xmin + xmax)
-            ymid = 0.5 * (ymin + ymax)
-            zmid = 0.5 * (zmin + zmax)
-
-            nx, ny, nz = CUSTOM_PLANE_NORMAL
-            ax = abs(nx)
-            ay = abs(ny)
-            az = abs(nz)
-
-            if ax >= ay and ax >= az:
-                # Frontal-like: move plane along x
-                start = xmin if nx >= 0 else xmax
-                centre = xmid
-                cx = start + PLANE_DEPTH * (centre - start)
-                cy = ymid
-                cz = zmid
-            elif ay >= ax and ay >= az:
-                # Horizontal-like: move plane along y
-                start = ymin if ny >= 0 else ymax
-                centre = ymid
-                cx = xmid
-                cy = start + PLANE_DEPTH * (centre - start)
-                cz = zmid
-            else:
-                # Sagittal-like: move plane along z
-                start = zmin if nz >= 0 else zmax
-                centre = zmid
-                cx = xmid
-                cy = ymid
-                cz = start + PLANE_DEPTH * (centre - start)
-
-            plane_pos = (cx, cy, cz)
-        else:
-            # Fallback: if root is missing, just don't slice
-            plane_pos = None
-
-        if plane_pos is not None:
-            custom_plane = scene.atlas.get_plane(
-                pos=plane_pos,
-                norm=CUSTOM_PLANE_NORMAL,
-            )
-            plane_arg = custom_plane
-        else:
-            plane_arg = None
+        _BASE_FRONTAL_AZIMUTH_DEG = 180.0
+        active_camera = create_camera(
+            (xmin, xmax, ymin, ymax, zmin, zmax),
+            distance_factor=camera_distance_factor,
+            base_frontal_azimuth_deg=_BASE_FRONTAL_AZIMUTH_DEG,
+            rotation_deg=camera_rotation_deg,
+            elevation_deg=camera_elevation_deg,
+        )
     else:
-        # Use one of the built‑in plane names: "sagittal", "frontal", "horizontal"
-        plane_arg = SLICE_MODE
+        active_camera = None
 
-    if plane_arg is not None:
-        scene.slice(
-            plane=plane_arg,
-            actors=None,
+    # Probe tracks
+    for npy_path in sorted(tracks_dir.glob("*.npy")):
+        coords = np.load(npy_path)
+        scene.add(
+            Points(
+                coords,
+                name=npy_path.stem,
+                colors=PROBE_COLOR,
+                radius=PROBE_RADIUS,
+            )
         )
 
+    # Custom segmented regions
+    if regions_dir.exists():
+        for obj_path in sorted(regions_dir.glob("*.obj")):
+            scene.add(str(obj_path), color=CUSTOM_REGION_COLOR, alpha=CUSTOM_REGION_ALPHA)
 
-# ============================
-# RENDERING
-# ============================
+    # Optional slicing
+    if slice_mode not in (None, "none"):
+        if slice_mode == "custom":
+            plane_arg = None
+            if hasattr(scene, "root") and scene.root is not None:
+                xmin, xmax, ymin, ymax, zmin, zmax = scene.root.bounds()
+                xmid = 0.5 * (xmin + xmax)
+                ymid = 0.5 * (ymin + ymax)
+                zmid = 0.5 * (zmin + zmax)
 
-# Set axes type
-scene.plotter.axes = 9
+                nx, ny, nz = custom_plane_normal
+                ax = abs(nx)
+                ay = abs(ny)
+                az = abs(nz)
 
-# Build compact identifiers from key parameters
-# Use short, filename-friendly tokens without duplicated words.
-parts = [f"sub-{subject_id}"]
+                if ax >= ay and ax >= az:
+                    start = xmin if nx >= 0 else xmax
+                    centre = xmid
+                    cx = start + plane_depth * (centre - start)
+                    cy = ymid
+                    cz = zmid
+                elif ay >= ax and ay >= az:
+                    start = ymin if ny >= 0 else ymax
+                    centre = ymid
+                    cx = xmid
+                    cy = start + plane_depth * (centre - start)
+                    cz = zmid
+                else:
+                    start = zmin if nz >= 0 else zmax
+                    centre = zmid
+                    cx = xmid
+                    cy = ymid
+                    cz = start + plane_depth * (centre - start)
 
-parts.append(f"dist-{CAMERA_DISTANCE_FACTOR:.2f}")
-parts.append(f"rot-{CAMERA_ROTATION_DEG:.1f}")
-parts.append(f"el-{CAMERA_ELEVATION_DEG:.1f}")
+                plane_pos = (cx, cy, cz)
+                custom_plane = scene.atlas.get_plane(
+                    pos=plane_pos,
+                    norm=custom_plane_normal,
+                )
+                plane_arg = custom_plane
+        else:
+            plane_arg = slice_mode
 
-if SLICE_MODE and SLICE_MODE not in ("none", None):
-    parts.append(f"slice-{SLICE_MODE}")
-    if SLICE_MODE == "custom":
-        parts.append(f"depth-{PLANE_DEPTH:.2f}")
-        parts.append(
-            "n-"
-            f"{CUSTOM_PLANE_NORMAL[0]:.2f}_"
-            f"{CUSTOM_PLANE_NORMAL[1]:.2f}_"
-            f"{CUSTOM_PLANE_NORMAL[2]:.2f}"
-        )
+        if plane_arg is not None:
+            scene.slice(
+                plane=plane_arg,
+                actors=None,
+            )
 
-# Human-readable window title
-scene.title = " | ".join(parts)
+    # Rendering and saving
+    scene.plotter.axes = 9
 
-# File-friendly base name (already using '-' and '_' separators)
-filename_base = "_".join(parts)
-filename = _sanitize_for_filename(filename_base) + ".png"
+    parts = [f"sub-{subject_id}"]
+    parts.append(f"dist-{camera_distance_factor:.2f}")
+    parts.append(f"rot-{camera_rotation_deg:.1f}")
+    parts.append(f"el-{camera_elevation_deg:.1f}")
 
-scene.render(camera=ACTIVE_CAMERA, interactive=True)
+    if slice_mode and slice_mode not in ("none", None):
+        parts.append(f"slice-{slice_mode}")
+        if slice_mode == "custom":
+            parts.append(f"depth-{plane_depth:.2f}")
+            parts.append(
+                "n-"
+                f"{custom_plane_normal[0]:.2f}_"
+                f"{custom_plane_normal[1]:.2f}_"
+                f"{custom_plane_normal[2]:.2f}"
+            )
 
-# Save a PNG snapshot of the final view
-scene.screenshot(name=filename)
+    scene.title = " | ".join(parts)
+    filename_base = "_".join(parts)
+    filename = _sanitize_for_filename(filename_base) + ".png"
+
+    if active_camera is not None:
+        scene.render(camera=active_camera, interactive=False)
+    else:
+        scene.render(interactive=False)
+
+    scene.screenshot(name=filename, scale=2)
+
+
+def render_all(presets: list[dict], args: argparse.Namespace) -> None:
+    """
+    Iterate over all presets and render the ones matching CLI filters.
+    """
+    for preset in presets:
+        subdir = preset["BRAINREG_SUBDIR"]
+
+        if args.only_subdir and args.only_subdir not in subdir:
+            continue
+
+        if args.only_subject:
+            subj = subject_from_folder(Path(subdir))
+            if args.only_subject not in subj:
+                continue
+
+        render_one(preset)
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(
+        description="Render brainreg PNG views from JSON presets."
+    )
+    parser.add_argument(
+        "--only-subdir",
+        type=str,
+        help="Only render presets whose BRAINREG_SUBDIR contains this substring.",
+    )
+    parser.add_argument(
+        "--only-subject",
+        type=str,
+        help="Only render presets whose derived subject_id (from folder name) "
+        "contains this substring (e.g. 'ROI-1', 'MPX-R-0033').",
+    )
+    args = parser.parse_args()
+
+    presets_path = Path(__file__).parent / "viewer_presets.json"
+    with presets_path.open() as f:
+        presets = json.load(f)
+
+    render_all(presets, args)
