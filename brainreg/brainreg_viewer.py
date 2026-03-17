@@ -76,6 +76,8 @@ def render_one(preset: dict) -> None:
 
     subject_id = subject_from_folder(brainreg_dir)
     scene = Scene(atlas_name=ATLAS_NAME, title=subject_id)
+    scene.plotter.window.SetOffScreenRendering(True)
+    scene.plotter.renderer.SetBackgroundAlpha(0)    
 
     # Atlas regions
     for region in regions_to_show:
@@ -204,8 +206,8 @@ def render_one(preset: dict) -> None:
     else:
         scene.render(interactive=False)
 
-    scene.screenshot(name=filename, scale=2)
-
+    # scene.screenshot(name=filename, scale=2)
+    scene.plotter.screenshot(filename, scale=2)
 
 def render_all(presets: list[dict], args: argparse.Namespace) -> None:
     """
