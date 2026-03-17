@@ -5,6 +5,7 @@ import numpy as np
 import brainrender
 from brainrender import Scene
 from brainrender.actors import Points
+from camera_helpers import create_camera
 
 
 def subject_from_folder(folder: Path) -> str:
@@ -55,30 +56,22 @@ CUSTOM_REGION_ALPHA = 0.4
 PROBE_COLOR = "gold"
 PROBE_RADIUS = 50
 
-# Camera presets (captured with shift-C)
-CAMERA_1 = dict(
-    pos=(-8468.67, -22084.2, -32066.0),
-    focal_point=(11825.8, 7227.94, -7575.50),
-    viewup=(0.454886, -0.735034, 0.502796),
-    roll=-178.313,
-    distance=43253.4,
-    clipping_range=(22554.6, 71511.5),
-)
+# Camera configuration (atlas-agnostic)
+# CAMERA_DISTANCE_FACTOR:
+#   - How far the camera sits from the atlas centre, as a multiple of the
+#     largest brain extent. Typical range: 1.2–3.0. Larger = further away.
+CAMERA_DISTANCE_FACTOR = 2.0
 
-CAMERA_2 = dict(
-    pos=(-13069.2, -15932.8, 17318.6),
-    focal_point=(12416.4, 8247.25, -7913.66),
-    viewup=(0.469847, -0.824443, -0.315496),
-    roll=173.894,
-    distance=43253.4,
-    clipping_range=(17082.4, 69482.3),
-)
+# CAMERA_ROTATION_DEG:
+#   - Horizontal rotation around the brain, starting from a computed frontal
+#     baseline. Use range [-180, 180]: negative = rotate left, positive = rotate right.
+CAMERA_ROTATION_DEG = 45.0
 
-CAMERA_FRONTAL = "frontal"
-CAMERA_SAGITTAL = "sagittal"
-
-# Choose which camera preset to use
-ACTIVE_CAMERA = CAMERA_1
+# CAMERA_ELEVATION_DEG:
+#   - Vertical tilt (degrees) in this atlas: 0 = level with centre.
+#     Negative values (e.g. -10 to -40) look from above, positive from below.
+#     Useful range ≈ [-60, 60].
+CAMERA_ELEVATION_DEG = -30.0
 
 # Slice mode:
 # - None or "none": no slicing
@@ -87,7 +80,7 @@ ACTIVE_CAMERA = CAMERA_1
 #     * PLANE_NX / PLANE_NY / PLANE_NZ in [0, 1] (position within atlas bounds)
 #     * CUSTOM_PLANE_NORMAL (orientation/direction of the cut)
 
-SLICE_MODE = "custom" 
+SLICE_MODE = None
 
 # Normalized position of the slicing plane within the atlas bounds (used when
 # SLICE_MODE == "custom"). These are in [0, 1]:
@@ -151,6 +144,23 @@ if hasattr(scene, "root") and scene.root is not None:
         f"z=[{zmin:.1f}, {zmax:.1f}]",
     )
     print("Atlas/root center:", f"({xmid:.1f}, {ymid:.1f}, {zmid:.1f})")
+
+    # ============================
+    # CAMERAS (computed from atlas bounds)
+    # ============================
+    # Internal baseline azimuth for a frontal-like view. This is atlas-agnostic
+    # as long as x is left–right and z is anterior–posterior (BrainGlobe
+    # convention). Users normally control only CAMERA_ROTATION_DEG /
+    # CAMERA_DISTANCE_FACTOR / CAMERA_ELEVATION_DEG above.
+    _BASE_FRONTAL_AZIMUTH_DEG = 180.0
+
+    ACTIVE_CAMERA = create_camera(
+        (xmin, xmax, ymin, ymax, zmin, zmax),
+        distance_factor=CAMERA_DISTANCE_FACTOR,
+        base_frontal_azimuth_deg=_BASE_FRONTAL_AZIMUTH_DEG,
+        rotation_deg=CAMERA_ROTATION_DEG,
+        elevation_deg=CAMERA_ELEVATION_DEG,
+    )
 
 
 # ============================
@@ -221,20 +231,32 @@ if SLICE_MODE not in (None, "none"):
 # Set axes type
 scene.plotter.axes = 9
 
-# Derive a human-readable camera label
-if isinstance(ACTIVE_CAMERA, str):
-    camera_label = ACTIVE_CAMERA
-else:
-    camera_label = "custom"
+# Build compact identifiers from key parameters
+# Use short, filename-friendly tokens without duplicated words.
+parts = [f"sub-{subject_id}"]
 
-# Build a descriptive title and filename using subject, camera and plane values
-title_str = (
-    f"{subject_id} | cam={camera_label} | "
-    f"nx={PLANE_NX:.2f}, ny={PLANE_NY:.2f}, nz={PLANE_NZ:.2f}"
-)
-scene.title = title_str
+parts.append(f"dist-{CAMERA_DISTANCE_FACTOR:.2f}")
+parts.append(f"rot-{CAMERA_ROTATION_DEG:.1f}")
+parts.append(f"el-{CAMERA_ELEVATION_DEG:.1f}")
 
-filename_base = f"{subject_id}_cam-{camera_label}_nx{PLANE_NX:.2f}_ny{PLANE_NY:.2f}_nz{PLANE_NZ:.2f}"
+if SLICE_MODE and SLICE_MODE not in ("none", None):
+    parts.append(f"slice-{SLICE_MODE}")
+    if SLICE_MODE == "custom":
+        parts.append(f"nx-{PLANE_NX:.2f}")
+        parts.append(f"ny-{PLANE_NY:.2f}")
+        parts.append(f"nz-{PLANE_NZ:.2f}")
+        parts.append(
+            "n-"
+            f"{CUSTOM_PLANE_NORMAL[0]:.2f}_"
+            f"{CUSTOM_PLANE_NORMAL[1]:.2f}_"
+            f"{CUSTOM_PLANE_NORMAL[2]:.2f}"
+        )
+
+# Human-readable window title
+scene.title = " | ".join(parts)
+
+# File-friendly base name (already using '-' and '_' separators)
+filename_base = "_".join(parts)
 filename = _sanitize_for_filename(filename_base) + ".png"
 
 scene.render(camera=ACTIVE_CAMERA, interactive=True)
