@@ -45,15 +45,17 @@ BASE_DIR = Path(
 )
 
 # Pick which subject to view (change this line only)
-BRAINREG_DIR = BASE_DIR / "ds_ROI-2_220721_100551_25_25_ch02_chan_2_red_mCherryvirus2"
+BRAINREG_DIR = BASE_DIR / "ds_MPX-R-0033_250606_133230_25_25_ch02_chan_2_red"
 
-# Regions to highlight from the atlas
+# Regions to highlight from the atlas M2, Cg1
 REGIONS_TO_SHOW = [
-    "Am-u",
+    #"Am-u",
     "M2",
-    "PrL",
-    "MO",
-    "IL",
+    "Cg1",
+    "cc-ec-cing-dwm",
+    #"PrL",
+    #"MO",
+    #"IL",
 ]
 
 # Camera configuration (atlas-agnostic)
@@ -65,38 +67,40 @@ CAMERA_DISTANCE_FACTOR = 2.0
 # CAMERA_ROTATION_DEG:
 #   - Horizontal rotation around the brain, starting from a computed frontal
 #     baseline. Use range [-180, 180]: negative = rotate left, positive = rotate right.
-CAMERA_ROTATION_DEG = 45.0
+CAMERA_ROTATION_DEG = 0
 
 # CAMERA_ELEVATION_DEG:
 #   - Vertical tilt (degrees) in this atlas: 0 = level with centre.
 #     Negative values (e.g. -10 to -40) look from above, positive from below.
 #     Useful range ≈ [-60, 60].
-CAMERA_ELEVATION_DEG = -30.0
+CAMERA_ELEVATION_DEG = -90
 
 # Slice mode:
 # - None or "none": no slicing
 # - "sagittal" / "frontal" / "horizontal": built‑in orthogonal planes
-# - "custom": define a plane by:
-#     * PLANE_NX / PLANE_NY / PLANE_NZ in [0, 1] (position within atlas bounds)
+# - "custom": one atlas-aware slice plane controlled by:
+#     * PLANE_DEPTH in [-1, 1] (position along slice axis)
 #     * CUSTOM_PLANE_NORMAL (orientation/direction of the cut)
 
 SLICE_MODE = "custom" 
 
-# Normalized position of the slicing plane within the atlas bounds (used when
-# SLICE_MODE == "custom"). These are in [0, 1]:
-#   0   = min (left / bottom / back)
-#   0.5 = center
-#   1   = max (right / top / front)
-PLANE_NX = 0.4
-PLANE_NY = 0.5
-PLANE_NZ = 0.5
+# Normalized depth of the slicing plane within the atlas bounds (used when
+# SLICE_MODE == "custom"). This is in [0, 1] and is always measured *inwards
+# from the edge you are cutting from*, along the axis selected by
+# CUSTOM_PLANE_NORMAL:
+#   0.0 = exactly at that edge
+#   1.0 = at the centre along that axis
+# For example, with CUSTOM_PLANE_NORMAL = (0, 0, 1) (sagittal-like), a depth
+# of 0.7 keeps a 70%-thick slab from the left (zmin) towards the centre; flipping
+# the normal to (0, 0, -1) cuts the same thickness from the right (zmax).
+PLANE_DEPTH = 0.7
 
 # Orientation of the custom plane (works for any atlas). Use one of:
 #   (1, 0, 0)  -> frontal-like (front/back split)
 #   (0, 1, 0)  -> horizontal-like (top/bottom split)
 #   (0, 0, 1)  -> sagittal-like (left/right split)
 # Flip the sign to invert which side is kept (e.g. (0, -1, 0)).
-CUSTOM_PLANE_NORMAL = (1.0, 0.0, 0.0)
+CUSTOM_PLANE_NORMAL = (-1.0, 0.0, 0.0)
 
 
 # Global brainrender look
@@ -197,9 +201,40 @@ if SLICE_MODE not in (None, "none"):
         # try to look up a named plane.
         if hasattr(scene, "root") and scene.root is not None:
             xmin, xmax, ymin, ymax, zmin, zmax = scene.root.bounds()
-            cx = xmin + PLANE_NX * (xmax - xmin)
-            cy = ymin + PLANE_NY * (ymax - ymin)
-            cz = zmin + PLANE_NZ * (zmax - zmin)
+            # Map PLANE_DEPTH in [0, 1] to atlas coordinates along the primary
+            # axis of CUSTOM_PLANE_NORMAL (x, y, or z), always measured from
+            # the edge you are "cutting from" towards the centre.
+            xmid = 0.5 * (xmin + xmax)
+            ymid = 0.5 * (ymin + ymax)
+            zmid = 0.5 * (zmin + zmax)
+
+            nx, ny, nz = CUSTOM_PLANE_NORMAL
+            ax = abs(nx)
+            ay = abs(ny)
+            az = abs(nz)
+
+            if ax >= ay and ax >= az:
+                # Frontal-like: move plane along x
+                start = xmin if nx >= 0 else xmax
+                centre = xmid
+                cx = start + PLANE_DEPTH * (centre - start)
+                cy = ymid
+                cz = zmid
+            elif ay >= ax and ay >= az:
+                # Horizontal-like: move plane along y
+                start = ymin if ny >= 0 else ymax
+                centre = ymid
+                cx = xmid
+                cy = start + PLANE_DEPTH * (centre - start)
+                cz = zmid
+            else:
+                # Sagittal-like: move plane along z
+                start = zmin if nz >= 0 else zmax
+                centre = zmid
+                cx = xmid
+                cy = ymid
+                cz = start + PLANE_DEPTH * (centre - start)
+
             plane_pos = (cx, cy, cz)
         else:
             # Fallback: if root is missing, just don't slice
@@ -242,9 +277,7 @@ parts.append(f"el-{CAMERA_ELEVATION_DEG:.1f}")
 if SLICE_MODE and SLICE_MODE not in ("none", None):
     parts.append(f"slice-{SLICE_MODE}")
     if SLICE_MODE == "custom":
-        parts.append(f"nx-{PLANE_NX:.2f}")
-        parts.append(f"ny-{PLANE_NY:.2f}")
-        parts.append(f"nz-{PLANE_NZ:.2f}")
+        parts.append(f"depth-{PLANE_DEPTH:.2f}")
         parts.append(
             "n-"
             f"{CUSTOM_PLANE_NORMAL[0]:.2f}_"
