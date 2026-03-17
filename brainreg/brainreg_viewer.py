@@ -2,8 +2,7 @@
 from pathlib import Path
 
 import numpy as np
-import brainrender
-from brainrender import Scene
+from brainrender import Scene, settings
 from brainrender.actors import Points
 from camera_helpers import create_camera
 from styles import (
@@ -16,6 +15,11 @@ from styles import (
     PROBE_RADIUS,
 )
 
+# Global brainrender look via settings API (applies to all scenes)
+settings.LIGHTING = "soft"
+settings.SHADER_STYLE = "plastic"
+settings.SHOW_AXES = False
+settings.SCREENSHOT_TRANSPARENT_BACKGROUND = True
 
 def subject_from_folder(folder: Path) -> str:
     """Extract subject ID from a brainreg folder name like ds_SUBJECT_YYYYMMDD_..."""
@@ -49,13 +53,15 @@ BRAINREG_DIR = BASE_DIR / "ds_MPX-R-0033_250606_133230_25_25_ch02_chan_2_red"
 
 # Regions to highlight from the atlas M2, Cg1
 REGIONS_TO_SHOW = [
-    #"Am-u",
+    # "Am-u",
     "M2",
-    "Cg1",
+    # "S1-bf", 
+    #"S2", 
+    # "Cg1",
     "cc-ec-cing-dwm",
-    #"PrL",
+    # "PrL",
     #"MO",
-    #"IL",
+    # "IL",
 ]
 
 # Camera configuration (atlas-agnostic)
@@ -67,13 +73,13 @@ CAMERA_DISTANCE_FACTOR = 2.0
 # CAMERA_ROTATION_DEG:
 #   - Horizontal rotation around the brain, starting from a computed frontal
 #     baseline. Use range [-180, 180]: negative = rotate left, positive = rotate right.
-CAMERA_ROTATION_DEG = 0
+CAMERA_ROTATION_DEG = -45
 
 # CAMERA_ELEVATION_DEG:
 #   - Vertical tilt (degrees) in this atlas: 0 = level with centre.
 #     Negative values (e.g. -10 to -40) look from above, positive from below.
 #     Useful range ≈ [-60, 60].
-CAMERA_ELEVATION_DEG = -90
+CAMERA_ELEVATION_DEG = -15
 
 # Slice mode:
 # - None or "none": no slicing
@@ -82,7 +88,7 @@ CAMERA_ELEVATION_DEG = -90
 #     * PLANE_DEPTH in [-1, 1] (position along slice axis)
 #     * CUSTOM_PLANE_NORMAL (orientation/direction of the cut)
 
-SLICE_MODE = "custom" 
+SLICE_MODE = "none" 
 
 # Normalized depth of the slicing plane within the atlas bounds (used when
 # SLICE_MODE == "custom"). This is in [0, 1] and is always measured *inwards
@@ -91,23 +97,19 @@ SLICE_MODE = "custom"
 #   0.0 = exactly at that edge
 #   1.0 = at the centre along that axis
 # For example, with CUSTOM_PLANE_NORMAL = (0, 0, 1) (sagittal-like), a depth
-# of 0.7 keeps a 70%-thick slab from the left (zmin) towards the centre; flipping
-# the normal to (0, 0, -1) cuts the same thickness from the right (zmax).
-PLANE_DEPTH = 0.7
+# of 0.7 places the plane 70% of the way from the left edge (zmin) towards the
+# centre; the half on the +z side of the plane is kept. Flipping the normal to
+# (0, 0, -1) instead places the plane 70% inwards from the right edge (zmax),
+# keeping the opposite half.
+PLANE_DEPTH = 0.4
 
 # Orientation of the custom plane (works for any atlas). Use one of:
 #   (1, 0, 0)  -> frontal-like (front/back split)
 #   (0, 1, 0)  -> horizontal-like (top/bottom split)
 #   (0, 0, 1)  -> sagittal-like (left/right split)
 # Flip the sign to invert which side is kept (e.g. (0, -1, 0)).
-CUSTOM_PLANE_NORMAL = (-1.0, 0.0, 0.0)
+CUSTOM_PLANE_NORMAL = (1.0, 0.0, 0.0)
 
-
-# Global brainrender look
-brainrender.LIGHTING = "default"
-brainrender.SHADER_STYLE = "plastic"
-brainrender.SHOW_AXES = False
-brainrender.SCREENSHOT_TRANSPARENT_BACKGROUND = False
 
 
 # ============================
