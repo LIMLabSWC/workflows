@@ -46,12 +46,22 @@ Copy or symlink the three bash scripts (and optionally `visualize_probe.py`) int
 - **brainreg_config.sh** — Set `PROJECT_DIR` (project dir), atlas, and brainreg parameters.
 - **submit_brainreg.sh** — Scans `PROJECT_DIR/data` for TIFs, skips already-done, submits SLURM array.
 - **sbatch_brainreg_use_cases.sh** — SLURM job script; runs brainreg for one image (sources config from `SLURM_SUBMIT_DIR`).
-- **visualize_probe.py** — Renders probe `.npy` tracks in brainrender and exports HTML.
+- **probes_to_html.py** — Renders probe `.npy` tracks in brainrender and exports an interactive HTML file.
+- **brainreg_viewer.py** — Interactive brainrender viewer for one brainreg output; atlas-aware camera
+  controlled by distance/rotation/elevation; writes PNG snapshots with parameters in the filename.
+- **camera_helpers.py** — Shared helpers to build atlas-aware cameras from atlas bounds and intuitive
+  parameters.
 
 ## Running
 
 1. In your project folder: set `PROJECT_DIR` in `brainreg_config.sh` (e.g. `PROJECT_DIR="${HOME}/brainglobe_workingdir/use_cases_for_paper"`).
 2. Run `./submit_brainreg.sh` (from the project folder or from anywhere; the script will submit from the directory where the scripts live).
-3. For probe viz: `python visualize_probe.py <atlas> <tracks_dir> <out.html> [--regions ...]`.
+3. For probe viz (HTML): `python probes_to_html.py <atlas> <brainreg_dir> <out.html> [--regions ...]`.
+4. For interactive viewer PNGs: set `ATLAS_NAME`, `BRAINREG_DIR`, and the camera parameters at the top
+   of `brainreg_viewer.py`, then run:
+
+   ```bash
+   python brainreg_viewer.py
+   ```
 
 Requires brainglobe environment (e.g. `module load brainglobe/2025-07-06`) and SLURM for the batch jobs.

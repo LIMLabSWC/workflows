@@ -6,6 +6,15 @@ import brainrender
 from brainrender import Scene
 from brainrender.actors import Points
 from camera_helpers import create_camera
+from styles import (
+    REGION_ALPHA,
+    ROOT_ALPHA,
+    ROOT_COLOR,
+    CUSTOM_REGION_COLOR,
+    CUSTOM_REGION_ALPHA,
+    PROBE_COLOR,
+    PROBE_RADIUS,
+)
 
 
 def subject_from_folder(folder: Path) -> str:
@@ -36,7 +45,7 @@ BASE_DIR = Path(
 )
 
 # Pick which subject to view (change this line only)
-BRAINREG_DIR = BASE_DIR / "ds_ROI-1_230620_102737_25_25_ch02_chan_2_red_2x4shankNPX"
+BRAINREG_DIR = BASE_DIR / "ds_ROI-2_220721_100551_25_25_ch02_chan_2_red_mCherryvirus2"
 
 # Regions to highlight from the atlas
 REGIONS_TO_SHOW = [
@@ -47,19 +56,10 @@ REGIONS_TO_SHOW = [
     "IL",
 ]
 
-# Visual styling parameters
-REGION_ALPHA = 0.3          # main highlighted regions
-ROOT_ALPHA = 0.1            # whole-brain outline
-ROOT_COLOR = "grey"
-CUSTOM_REGION_COLOR = "crimson"
-CUSTOM_REGION_ALPHA = 0.4
-PROBE_COLOR = "gold"
-PROBE_RADIUS = 50
-
 # Camera configuration (atlas-agnostic)
 # CAMERA_DISTANCE_FACTOR:
 #   - How far the camera sits from the atlas centre, as a multiple of the
-#     largest brain extent. Typical range: 1.2–3.0. Larger = further away.
+#     largest brain extent. Larger = further away.
 CAMERA_DISTANCE_FACTOR = 2.0
 
 # CAMERA_ROTATION_DEG:
@@ -80,15 +80,15 @@ CAMERA_ELEVATION_DEG = -30.0
 #     * PLANE_NX / PLANE_NY / PLANE_NZ in [0, 1] (position within atlas bounds)
 #     * CUSTOM_PLANE_NORMAL (orientation/direction of the cut)
 
-SLICE_MODE = None
+SLICE_MODE = "custom" 
 
 # Normalized position of the slicing plane within the atlas bounds (used when
 # SLICE_MODE == "custom"). These are in [0, 1]:
 #   0   = min (left / bottom / back)
 #   0.5 = center
 #   1   = max (right / top / front)
-PLANE_NX = 0.5
-PLANE_NY = 0.8
+PLANE_NX = 0.4
+PLANE_NY = 0.5
 PLANE_NZ = 0.5
 
 # Orientation of the custom plane (works for any atlas). Use one of:
@@ -96,7 +96,7 @@ PLANE_NZ = 0.5
 #   (0, 1, 0)  -> horizontal-like (top/bottom split)
 #   (0, 0, 1)  -> sagittal-like (left/right split)
 # Flip the sign to invert which side is kept (e.g. (0, -1, 0)).
-CUSTOM_PLANE_NORMAL = (0.0, 0.0, 1.0)
+CUSTOM_PLANE_NORMAL = (1.0, 0.0, 0.0)
 
 
 # Global brainrender look
