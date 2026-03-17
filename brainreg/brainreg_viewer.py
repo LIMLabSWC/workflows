@@ -206,7 +206,6 @@ def render_one(preset: dict) -> None:
         scene.render(interactive=False)
 
     scene.screenshot(name=filename, scale=2)
-    #scene.plotter.screenshot(filename, scale=2)
 
 def render_all(presets: list[dict], args: argparse.Namespace) -> None:
     """
