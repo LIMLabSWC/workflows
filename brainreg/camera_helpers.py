@@ -31,7 +31,8 @@ def make_camera_from_angles(
     """
     Create a camera dict from atlas bounds and spherical angles.
 
-    - bounds: scene.root.bounds()
+    - bounds: six floats (xmin, xmax, ymin, ymax, zmin, zmax), e.g. from
+      ``scene.root.bounds()`` or a union of actor bounds
     - distance_factor: how many times the max atlas extent to stand back
     - azimuth_deg: rotation around the "vertical" axis (y)
     - elevation_deg: tilt up/down
@@ -74,7 +75,8 @@ def create_camera(
     """
     Create a single atlas-aware camera from intuitive parameters:
 
-    - bounds: scene.root.bounds()
+    - bounds: six floats (xmin, xmax, ymin, ymax, zmin, zmax), e.g. from
+      ``scene.root.bounds()`` or a union of actor bounds
     - distance_factor: how many times the max atlas extent to stand back
     - base_frontal_azimuth_deg: azimuth that corresponds to a frontal view
     - rotation_deg: extra rotation around the brain (left/right) added

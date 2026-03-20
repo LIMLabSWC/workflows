@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+"""Convert pure white pixels in PNGs to transparent (batch folder in → out)."""
+
 from __future__ import annotations
 
 import argparse
@@ -8,17 +10,13 @@ from PIL import Image
 
 
 def white_to_transparent(img: Image.Image) -> Image.Image:
-    # Work in RGBA so we can edit alpha.
+    """Return a copy in RGBA with (255,255,255) replaced by transparent."""
     rgba = img.convert("RGBA")
     pixels = rgba.getdata()
-
-    new_pixels = []
-    for r, g, b, a in pixels:
-        if (r, g, b) == (255, 255, 255):
-            new_pixels.append((r, g, b, 0))  # transparent
-        else:
-            new_pixels.append((r, g, b, a))  # keep as-is
-
+    new_pixels = [
+        (r, g, b, 0) if (r, g, b) == (255, 255, 255) else (r, g, b, a)
+        for r, g, b, a in pixels
+    ]
     rgba.putdata(new_pixels)
     return rgba
 

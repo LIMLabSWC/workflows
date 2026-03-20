@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
-from pathlib import Path
+"""Batch-render brainreg scenes from JSON presets to PNG (offscreen)."""
+
 import argparse
+import json
+from pathlib import Path
 
 import numpy as np
 from brainrender import Scene, settings
@@ -18,9 +21,9 @@ from styles import (
 
 # Global brainrender look via settings API (applies to all scenes)
 settings.LIGHTING = "default"
-settings.SHADER_STYLE = "cartoon"
+settings.SHADER_STYLE = "plastic"
 settings.SHOW_AXES = False
-settings.SCREENSHOT_TRANSPARENT_BACKGROUND = True
+settings.SCREENSHOT_TRANSPARENT_BACKGROUND = False
 
 
 def subject_from_folder(folder: Path) -> str:
@@ -47,16 +50,12 @@ ATLAS_NAME = "swc_female_rat_50um"
 
 # Base directory with all subjects
 BASE_DIR = Path(
-    "/mnt/d/use_cases_for_paper/brainreg_outputs_swc_female_rat_50um/"
+    "/home/viktor/use_cases"
 )
-
-import json
 
 
 def render_one(preset: dict) -> None:
-    """
-    Render one PNG for the given preset configuration.
-    """
+    """Render one PNG for a preset. Requires ``.../atlas_space/tracks`` with ≥1 ``.npy``."""
     # Unpack preset parameters
     brainreg_dir = BASE_DIR / preset["BRAINREG_SUBDIR"]
     regions_to_show = preset["REGIONS_TO_SHOW"]
@@ -76,7 +75,7 @@ def render_one(preset: dict) -> None:
 
     subject_id = subject_from_folder(brainreg_dir)
     scene = Scene(atlas_name=ATLAS_NAME, title=subject_id)
-    scene.plotter.window.SetOffScreenRendering(True)   
+    scene.plotter.window.SetOffScreenRendering(True)
 
     # Atlas regions
     for region in regions_to_show:

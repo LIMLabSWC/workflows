@@ -3,8 +3,8 @@
 """
 Export probe `.npy` tracks to an interactive brainrender HTML file.
 
-All `.npy` probe track files found in the brainreg output's
-`segmentation/atlas_space/tracks` directory are rendered as line-like actors.
+All `.npy` files under `segmentation/atlas_space/tracks` are drawn with
+`brainrender.actors.Points` (sphere glyphs along each track).
 Brain regions are either supplied via `--regions` or automatically derived
 from the per‑probe CSV files (one CSV per probe/shank) using the
 "Region acronym" column. Optionally, additional custom region meshes can be
