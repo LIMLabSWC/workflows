@@ -92,3 +92,4 @@ set +x
 
 echo "DONE: ${IMG_PATH}"
 echo "END:  $(date -Is)"
+

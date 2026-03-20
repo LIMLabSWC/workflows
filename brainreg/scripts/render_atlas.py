@@ -12,7 +12,7 @@ from __future__ import annotations
 
 from brainrender import Scene, settings
 
-from camera_helpers import create_camera
+from brainreg.lib.camera_helpers import create_camera
 
 settings.LIGHTING = "default"
 settings.SHADER_STYLE = "plastic"
@@ -177,3 +177,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+

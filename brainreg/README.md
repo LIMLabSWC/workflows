@@ -1,69 +1,47 @@
 # brainreg
 
-Brain registration (brainreg) and probe visualization for use-case / paper workflows.
+Brain registration (`brainreg`), segmentation post-processing, and visualization for use-case / paper workflows.
 
-## Script map (how the three bash scripts work together)
+This workflow has three phases:
 
-```
-brainreg_config.sh
-       │
-       │  Defines PROJECT_DIR, DATA_DIR, LIST_FILE, OUTPUT_DIR, ATLAS, and all
-       │  brainreg parameters. No execution; only sourced by the other two.
-       │
-       ├──────────────────────────────────────────────────────────────────┐
-       │                                                                  │
-       ▼                                                                  ▼
-submit_brainreg.sh                                              sbatch_brainreg_use_cases.sh
-       │                                                                  │
-       │  1. Sources config from SCRIPT_DIR (directory of submit script)  │  Run by SLURM as array job
-       │  2. Loads brainglobe module, checks atlas                        │  (one process per image).
-       │  3. Finds all .tif/.tiff under DATA_DIR                          │
-       │  4. Skips images that already have OUTPUT_DIR/<stem>/registered_ │  1. Sources config from
-       │     atlas.tiff                                                   │     SLURM_SUBMIT_DIR (must be
-       │  5. Writes remaining paths to LIST_FILE (one per line)           │     the script dir; submit_brainreg
-       │  6. cd to SCRIPT_DIR, then sbatch --array=1-N ./sbatch_...       │     does "cd SCRIPT_DIR" before
-       │     so SLURM_SUBMIT_DIR = script dir                             │     sbatch to ensure this).
-       │                                                                  │  2. Reads line SLURM_ARRAY_TASK_ID
-       └─────────────────────────────────────────────────────────────────►│     from LIST_FILE → input image
-             Submits array job; each task runs sbatch_brainreg_use_cases  │  3. Runs brainreg for that image
-             and sources config from SUBMIT_DIR to get LIST_FILE, etc.    │     into OUTPUT_DIR/<stem>/
-```
+1. **Registration (SLURM):** run `brainreg` to create per-subject output folders with `registered_atlas.tiff`.
+2. **Segmentation + probe annotations (Napari):** open the registered subject outputs, add probe tracks/injections, and save into the subject’s `segmentation/` folder.
+3. **Visualization (Python):** render probe HTML and/or atlas+region PNG views from `segmentation/atlas_space/`.
 
-**Summary:** You run only `submit_brainreg.sh`. It uses `brainreg_config.sh` for paths and parameters, builds the list of images to process, and submits an array of `sbatch_brainreg_use_cases.sh` jobs. Each job sources the same config from the submit directory and processes one image.
-
-## Layout: one project folder
-
-Scripts, data, and output live in the **same folder** (e.g. your NFS project dir). Set `PROJECT_DIR` in `brainreg_config.sh` to that folder. The config then uses:
+## Project folder layout
+Scripts, data, and outputs are kept together in one project folder (e.g. your NFS project dir). The SLURM config expects:
 
 - `PROJECT_DIR/data` — input TIFs (any subdirs)
-- `PROJECT_DIR/brainreg_filelist.txt` — job list (written by submit script)
 - `PROJECT_DIR/brainreg_outputs_<atlas>/` — registration outputs
 
-Copy or symlink the three bash scripts (and optionally `visualize_probe.py`) into that folder. You can run `submit_brainreg.sh` from any working directory; it will `cd` to the script directory before submitting so the SLURM job finds the config.
+Copy/symlink the `brainreg/slurm/` folder into your project folder (preserving the `slurm/` subfolder), and edit `slurm/brainreg_config.sh` to set `PROJECT_DIR`.
 
-## Contents
+## Phase 1 (Registration, SLURM)
+See [`brainreg/slurm/README.md`](slurm/README.md) for the details of how the SLURM scripts work and how to run them.
 
-- **brainreg_config.sh** — Set `PROJECT_DIR` (project dir), atlas, and brainreg parameters.
-- **submit_brainreg.sh** — Scans `PROJECT_DIR/data` for TIFs, skips already-done, submits SLURM array.
-- **sbatch_brainreg_use_cases.sh** — SLURM job script; runs brainreg for one image (sources config from `SLURM_SUBMIT_DIR`).
-- **probes_to_html.py** — Renders probe `.npy` tracks in brainrender and exports an interactive HTML file.
-- **brainreg_viewer.py** — Interactive brainrender viewer for one brainreg output; atlas-aware camera
-  controlled by distance/rotation/elevation; writes PNG snapshots with parameters in the filename.
-- **camera_helpers.py** — Shared helpers to build atlas-aware cameras from atlas bounds and intuitive
-  parameters.
+At a minimum:
+- edit `slurm/brainreg_config.sh`
+- run `./slurm/submit_brainreg.sh`
 
-## Running
+## Phase 2 (Segmentation + probe annotations, Napari)
+For each registered subject folder created by Phase 1:
+1. Open the subject in `napari` using your brainrender/segmentation workflow.
+2. Add probe tracks/injections.
+3. Save back into the subject’s `segmentation/` folder in the locations expected by the Python visualizers:
+   - `segmentation/atlas_space/tracks/*.npy`
+   - optional `segmentation/atlas_space/regions/*.obj`
 
-1. In your project folder: set `PROJECT_DIR` in `brainreg_config.sh` (e.g. `PROJECT_DIR="${HOME}/brainglobe_workingdir/use_cases_for_paper"`).
-2. Run `./submit_brainreg.sh` (from the project folder or from anywhere; the script will submit from the directory where the scripts live).
-3. For probe viz (HTML): `python probes_to_html.py <atlas> <brainreg_dir> <out.html> [--regions ...]`.
-4. For interactive viewer PNGs: configure `viewer_presets.json` (one entry per desired view, with
-   `BRAINREG_SUBDIR`, `REGIONS_TO_SHOW`, camera and slice parameters), then run:
+## Phase 3 (Visualization, Python)
+From the `workflows` repo root (so the `brainreg/` package is importable):
 
-   ```bash
-   python brainreg_viewer.py              # all presets
-   python brainreg_viewer.py --only-subject ROI-1      # filter by subject
-   python brainreg_viewer.py --only-subdir ds_MPX-R-0033_...  # filter by subdir
-   ```
+1. Probe HTML:
+   - `python -m brainreg.scripts.probes_to_html <atlas> <brainreg_dir> <out.html> [--regions ...]`
+2. Atlas viewer PNGs:
+   - configure `brainreg/presets/viewer_presets.json`, then run:
+     ```bash
+     python -m brainreg.scripts.brainreg_viewer              # all presets
+     python -m brainreg.scripts.brainreg_viewer --only-subject ROI-1
+     python -m brainreg.scripts.brainreg_viewer --only-subdir ds_MPX-R-0033_...
+     ```
 
-Requires brainglobe environment (e.g. `module load brainglobe/2025-07-06`) and SLURM for the batch jobs.
+Requires a brainglobe environment (e.g. `module load brainglobe/2025-07-06`) and SLURM for Phase 1.

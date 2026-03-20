@@ -27,6 +27,7 @@ Example:
 # Headless settings (no popup)
 # ----------------------------
 import os
+
 os.environ["DISPLAY"] = ""
 os.environ["PYOPENGL_PLATFORM"] = "egl"
 os.environ["OFFSCREEN"] = "1"
@@ -43,8 +44,8 @@ import numpy as np
 
 from brainrender import Scene
 from brainrender.actors import Points
-from camera_helpers import create_camera
-from styles import (
+from brainreg.lib.camera_helpers import create_camera
+from brainreg.lib.styles import (
     REGION_ALPHA,
     CUSTOM_REGION_COLOR,
     CUSTOM_REGION_ALPHA,
@@ -73,7 +74,7 @@ parser.add_argument(
     "--regions",
     nargs="*",
     default=[],
-    help="List of brain region acronyms to display (e.g. --regions M2 VLO LO)"
+    help="List of brain region acronyms to display (e.g. --regions M2 VLO LO)",
 )
 parser.add_argument(
     "--no-custom-regions",
@@ -90,6 +91,7 @@ tracks_dir = atlas_space_dir / "tracks"
 regions_dir = atlas_space_dir / "regions"
 
 output_path = brainreg_dir / "segmentation" / Path(args.output_file_name)
+
 
 def find_custom_region_meshes(custom_regions_dir: Path) -> list[Path]:
     """
@@ -158,6 +160,7 @@ def get_probe_regions(input_dir: Path) -> dict:
             regions_per_probe[probe_name] = ordered_acronyms
 
     return regions_per_probe
+
 
 # ----------------------------
 # Ensure output directory exists
@@ -276,3 +279,4 @@ if hasattr(scene, "root") and scene.root is not None:
 # ----------------------------
 scene.export(output_path)
 print(f"Saved visualization to: {output_path}")
+

@@ -22,7 +22,9 @@ def white_to_transparent(img: Image.Image) -> Image.Image:
 
 
 def main() -> None:
-    p = argparse.ArgumentParser(description="Make pure-white (255,255,255) pixels transparent in PNGs.")
+    p = argparse.ArgumentParser(
+        description="Make pure-white (255,255,255) pixels transparent in PNGs."
+    )
     p.add_argument("input_dir", type=Path, help="Folder containing PNGs")
     p.add_argument("output_dir", type=Path, help="Folder to write new PNGs")
     p.add_argument("--overwrite", action="store_true", help="Overwrite output files if they already exist")
@@ -50,3 +52,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+

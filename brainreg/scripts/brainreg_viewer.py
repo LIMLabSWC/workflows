@@ -8,8 +8,8 @@ from pathlib import Path
 import numpy as np
 from brainrender import Scene, settings
 from brainrender.actors import Points
-from camera_helpers import create_camera
-from styles import (
+from brainreg.lib.camera_helpers import create_camera
+from brainreg.lib.styles import (
     REGION_ALPHA,
     ROOT_ALPHA,
     ROOT_COLOR,
@@ -79,7 +79,7 @@ def render_one(preset: dict) -> None:
 
     # Atlas regions
     for region in regions_to_show:
-        scene.add_brain_region(region, alpha=REGION_ALPHA)
+        scene.add_brain_region(region, alpha=REGION_ALPHA, silhouette=True)
 
     # Soften the whole-brain outline so regions/probes stand out
     if hasattr(scene, "root") and scene.root is not None:
@@ -206,6 +206,7 @@ def render_one(preset: dict) -> None:
 
     scene.screenshot(name=filename, scale=2)
 
+
 def render_all(presets: list[dict], args: argparse.Namespace) -> None:
     """
     Iterate over all presets and render the ones matching CLI filters.
@@ -241,8 +242,11 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    presets_path = Path(__file__).parent / "viewer_presets.json"
+    presets_path = (
+        Path(__file__).resolve().parents[1] / "presets" / "viewer_presets.json"
+    )
     with presets_path.open() as f:
         presets = json.load(f)
 
     render_all(presets, args)
+

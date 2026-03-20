@@ -4,7 +4,7 @@ from typing import Dict, Tuple
 
 
 def _center_and_extent(
-    bounds: Tuple[float, float, float, float, float, float]
+    bounds: Tuple[float, float, float, float, float, float],
 ) -> Tuple[Tuple[float, float, float], float]:
     """
     Given vtk-style bounds (xmin, xmax, ymin, ymax, zmin, zmax),
