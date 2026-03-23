@@ -31,16 +31,16 @@ REGION_ALPHA = 1.0
 REGION_MODE = "leaves"  # "leaves" | "all"
 
 CAMERA_DISTANCE_FACTOR = 2.0
-CAMERA_ROTATION_DEG = -45.0
+CAMERA_ROTATION_DEG = 135.0
 CAMERA_ELEVATION_DEG = -30.0
 _BASE_FRONTAL_AZIMUTH_DEG = 180.0
 
 SLICE_MODE = "custom"  # "none", "frontal", "horizontal", "sagittal", "custom"
 PLANE_DEPTH = 0.5
-CUSTOM_PLANE_NORMAL = (0.1, 0.0, 0.0)
+CUSTOM_PLANE_NORMAL = (0.0, 0.0, 1.0)
 
 _REGION_BATCH_SIZE = 256
-# Same as brainreg_viewer.render_one (wire bounding box, not cube-axis ticks).
+
 PLOTTER_AXES = 9
 
 
@@ -167,11 +167,11 @@ def main() -> None:
         scene.render(interactive=True)
 
     # Screenshot only for these normals (otherwise skip); filenames include SLICE_MODE.
-    if CUSTOM_PLANE_NORMAL == (0.1, 0.0, 0.0):
+    if CUSTOM_PLANE_NORMAL == (1.0, 0.0, 0.0) or CUSTOM_PLANE_NORMAL == (-1.0, 0.0, 0.0):
         scene.screenshot(name=f"atlas_screenshot_{SLICE_MODE}_frontal.png", scale=2)
-    elif CUSTOM_PLANE_NORMAL == (0.0, 0.0, -1.0):
+    elif CUSTOM_PLANE_NORMAL == (0.0, 0.0, -1.0) or CUSTOM_PLANE_NORMAL == (0.0, 0.0, 1.0):
         scene.screenshot(name=f"atlas_screenshot_{SLICE_MODE}_sagittal.png", scale=2)
-    elif CUSTOM_PLANE_NORMAL == (0.0, 1.0, 0.0):
+    elif CUSTOM_PLANE_NORMAL == (0.0, 1.0, 0.0) or CUSTOM_PLANE_NORMAL == (0.0, -1.0, 0.0):
         scene.screenshot(name=f"atlas_screenshot_{SLICE_MODE}_horizontal.png", scale=2)
 
 

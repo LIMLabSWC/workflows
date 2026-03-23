@@ -51,7 +51,8 @@
     "CAMERA_ELEVATION_DEG": -30.0,
     "SLICE_MODE": "custom",
     "PLANE_DEPTH": 0.4,
-    "CUSTOM_PLANE_NORMAL": [0.0, 0.0, -1.0]
+    "CUSTOM_PLANE_NORMAL": [0.0, 0.0, -1.0],
+    "SHOW_ROOT": false
   },
   {
     "BRAINREG_SUBDIR": "ds_ROI-1_230620_102737_25_25_ch02_chan_2_red_2x4shankNPX",
@@ -61,7 +62,8 @@
     "CAMERA_ELEVATION_DEG": -30.0,
     "SLICE_MODE": "custom",
     "PLANE_DEPTH": 0.9,
-    "CUSTOM_PLANE_NORMAL": [0.0, 0.0, -1.0]
+    "CUSTOM_PLANE_NORMAL": [0.0, 0.0, -1.0],
+    "SHOW_ROOT": false
   },
   {
     "BRAINREG_SUBDIR": "ds_ROI-1_230620_102737_25_25_ch02_chan_2_red_2x4shankNPX",
@@ -71,7 +73,8 @@
     "CAMERA_ELEVATION_DEG": -30.0,
     "SLICE_MODE": "custom",
     "PLANE_DEPTH": 1.0,
-    "CUSTOM_PLANE_NORMAL": [0.0, 0.0, 1.0]
+    "CUSTOM_PLANE_NORMAL": [0.0, 0.0, 1.0],
+    "SHOW_ROOT": false
   },
   {
     "BRAINREG_SUBDIR": "ds_ROI-2_220721_100551_25_25_ch02_chan_2_red_mCherryvirus2",
@@ -89,7 +92,8 @@
     "CAMERA_ELEVATION_DEG": -30.0,
     "SLICE_MODE": "custom",
     "PLANE_DEPTH": 0.85,
-    "CUSTOM_PLANE_NORMAL": [1.0, 0.0, 0.0]
+    "CUSTOM_PLANE_NORMAL": [1.0, 0.0, 0.0],
+    "SHOW_ROOT": false
   },
   {
     "BRAINREG_SUBDIR": "ds_ROI-2_220721_100551_25_25_ch02_chan_2_red_mCherryvirus2",
@@ -99,7 +103,8 @@
     "CAMERA_ELEVATION_DEG": -30.0,
     "SLICE_MODE": "custom",
     "PLANE_DEPTH": 0.85,
-    "CUSTOM_PLANE_NORMAL": [1.0, 0.0, 0.0]
+    "CUSTOM_PLANE_NORMAL": [1.0, 0.0, 0.0],
+    "SHOW_ROOT": false
   }
 ]
 

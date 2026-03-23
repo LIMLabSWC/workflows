@@ -1,4 +1,4 @@
-# brainreg
+# Brainglobe worklow for registration, segmentation and visualization 
 
 Brain registration (`brainreg`), segmentation post-processing, and visualization for use-case / paper workflows.
 
@@ -9,7 +9,8 @@ This workflow has three phases:
 3. **Visualization (Python):** render probe HTML and/or atlas+region PNG views from `segmentation/atlas_space/`.
 
 ## Project folder layout
-Scripts, data, and outputs are kept together in one project folder (e.g. your NFS project dir). The SLURM config expects:
+
+SLURM scripts, data, and outputs are kept together in one project folder (e.g. your NFS project dir). The SLURM config expects:
 
 - `PROJECT_DIR/data` — input TIFs (any subdirs)
 - `PROJECT_DIR/brainreg_outputs_<atlas>/` — registration outputs

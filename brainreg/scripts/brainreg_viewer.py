@@ -65,6 +65,7 @@ def render_one(preset: dict) -> None:
     slice_mode = preset.get("SLICE_MODE", "none")
     plane_depth = preset.get("PLANE_DEPTH", 0.0)
     custom_plane_normal = tuple(preset.get("CUSTOM_PLANE_NORMAL", (0.0, 0.0, 1.0)))
+    show_root = preset.get("SHOW_ROOT", True)
 
     atlas_space_dir = brainreg_dir / "segmentation" / "atlas_space"
     tracks_dir = atlas_space_dir / "tracks"
@@ -83,7 +84,13 @@ def render_one(preset: dict) -> None:
 
     # Soften the whole-brain outline so regions/probes stand out
     if hasattr(scene, "root") and scene.root is not None:
-        scene.root.c(ROOT_COLOR).alpha(ROOT_ALPHA)
+
+        if show_root:
+            scene.root.c(ROOT_COLOR).alpha(ROOT_ALPHA)
+        else:
+            scene.root.alpha(0)
+
+
 
         # Print atlas/root mesh bounds and compute camera
         xmin, xmax, ymin, ymax, zmin, zmax = scene.root.bounds()
