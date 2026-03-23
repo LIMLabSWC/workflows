@@ -1,4 +1,6 @@
 *.png
+!figures/
+!figures/**/*.png
 
 # Python bytecode / caches
 __pycache__/
