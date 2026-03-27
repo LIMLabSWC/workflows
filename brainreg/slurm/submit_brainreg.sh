@@ -30,7 +30,9 @@ print("Atlas ready: ${ATLAS}")
 PY
 
 # ------------------------------------------------------------------------------
-# Build job list: one line per TIF that does not yet have registered_atlas.tiff
+# Build job list: one line per TIF that does not yet have registered_atlas.tiff.
+# Follow symlinks so both real files and symlinked inputs under DATA_DIR are
+# discovered.
 # ------------------------------------------------------------------------------
 > "${LIST_FILE}"
 
@@ -44,7 +46,7 @@ while IFS= read -r f; do
         echo "$f" >> "${LIST_FILE}"
     fi
 done < <(
-    find "${DATA_DIR}" -type f \( -iname "*.tif" -o -iname "*.tiff" \) | sort
+    find -L "${DATA_DIR}" -type f \( -iname "*.tif" -o -iname "*.tiff" \) | sort
 )
 
 N=$(wc -l < "${LIST_FILE}")
