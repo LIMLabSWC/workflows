@@ -105,6 +105,16 @@
     "PLANE_DEPTH": 0.85,
     "CUSTOM_PLANE_NORMAL": [1.0, 0.0, 0.0],
     "SHOW_ROOT": false
+  },
+
+  {
+    "BRAINREG_SUBDIR": "ds_CAP30_220913_154529_25_25_ch03_chan_3_green",
+    "REGIONS_TO_SHOW": ["S1"],
+    "CAMERA_DISTANCE_FACTOR": 2.0,
+    "CAMERA_ROTATION_DEG": 45.0,
+    "CAMERA_ELEVATION_DEG": -30.0,
+    "SLICE_MODE": "none",
+    "SHOW_ROOT": true
   }
 ]
 

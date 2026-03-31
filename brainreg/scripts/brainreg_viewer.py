@@ -66,13 +66,15 @@ def render_one(preset: dict) -> None:
     plane_depth = preset.get("PLANE_DEPTH", 0.0)
     custom_plane_normal = tuple(preset.get("CUSTOM_PLANE_NORMAL", (0.0, 0.0, 1.0)))
     show_root = preset.get("SHOW_ROOT", True)
+    max_points = preset.get("MAX_POINTS", 500)
 
     atlas_space_dir = brainreg_dir / "segmentation" / "atlas_space"
     tracks_dir = atlas_space_dir / "tracks"
     regions_dir = atlas_space_dir / "regions"
+    cells_path = brainreg_dir / "brainmapper" / "points" / "points.npy"
 
-    if not tracks_dir.exists():
-        raise FileNotFoundError(f"Tracks directory not found: {tracks_dir}")
+    # if not tracks_dir.exists():
+    #     raise FileNotFoundError(f"Tracks directory not found: {tracks_dir}")
 
     subject_id = subject_from_folder(brainreg_dir)
     scene = Scene(atlas_name=ATLAS_NAME, title=subject_id)
@@ -133,6 +135,20 @@ def render_one(preset: dict) -> None:
     if regions_dir.exists():
         for obj_path in sorted(regions_dir.glob("*.obj")):
             scene.add(str(obj_path), color=CUSTOM_REGION_COLOR, alpha=CUSTOM_REGION_ALPHA)
+
+    # Brainmapper cells
+    if cells_path.exists():
+        cells = np.load(cells_path)
+        total_cells = len(cells)
+
+        if total_cells > max_points:
+            step = total_cells / max_points
+            idx = (np.arange(max_points) * step).astype(int)
+            cells = cells[idx]
+
+        cells = Points(cells, radius=45, colors="palegoldenrod")
+        scene.add(cells)
+
 
     # Optional slicing
     if slice_mode not in (None, "none"):
