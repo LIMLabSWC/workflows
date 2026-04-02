@@ -109,11 +109,25 @@
 
   {
     "BRAINREG_SUBDIR": "ds_CAP30_220913_154529_25_25_ch03_chan_3_green",
-    "REGIONS_TO_SHOW": ["S1"],
-    "CAMERA_DISTANCE_FACTOR": 2.0,
-    "CAMERA_ROTATION_DEG": 45.0,
-    "CAMERA_ELEVATION_DEG": -30.0,
-    "SLICE_MODE": "none",
+    "REGIONS_TO_SHOW": ["CA1", "CA2", "CA3", "DG"],
+    "CAMERA_DISTANCE_FACTOR": 1.0,
+    "CAMERA_ROTATION_DEG": 20.0,
+    "CAMERA_ELEVATION_DEG": -20.0,
+    "SLICE_MODE": "custom",
+    "PLANE_DEPTH": 1.0,
+    "CUSTOM_PLANE_NORMAL": [1.0, 0.0, 0.0],
+    "SHOW_ROOT": true
+  },
+
+  {
+    "BRAINREG_SUBDIR": "ds_CAP30_220913_154529_25_25_ch03_chan_3_green",
+    "REGIONS_TO_SHOW": ["Cb"],
+    "CAMERA_DISTANCE_FACTOR": 1.0,
+    "CAMERA_ROTATION_DEG": 140.0,
+    "CAMERA_ELEVATION_DEG": -20.0,
+    "SLICE_MODE": "custom",
+    "PLANE_DEPTH": 0.5,
+    "CUSTOM_PLANE_NORMAL": [-1.0, 0.0, 0.0],
     "SHOW_ROOT": true
   }
 ]

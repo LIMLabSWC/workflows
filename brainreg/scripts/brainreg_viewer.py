@@ -66,7 +66,7 @@ def render_one(preset: dict) -> None:
     plane_depth = preset.get("PLANE_DEPTH", 0.0)
     custom_plane_normal = tuple(preset.get("CUSTOM_PLANE_NORMAL", (0.0, 0.0, 1.0)))
     show_root = preset.get("SHOW_ROOT", True)
-    max_points = preset.get("MAX_POINTS", 500)
+    max_points = preset.get("MAX_POINTS", 5000)
 
     atlas_space_dir = brainreg_dir / "segmentation" / "atlas_space"
     tracks_dir = atlas_space_dir / "tracks"
