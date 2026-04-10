@@ -1,6 +1,7 @@
-# Brainglobe worklow for registration, segmentation and visualization 
+# BrainGlobe workflow for registration, segmentation, and visualization
 
-Brain registration (`brainreg`), segmentation post-processing, and visualization for use-case / paper workflows.
+Brain registration (`brainreg`), segmentation post-processing, and
+visualization for use-case / paper workflows.
 
 This workflow has three phases:
 
@@ -10,7 +11,8 @@ This workflow has three phases:
 
 ## Project folder layout
 
-SLURM scripts, data, and outputs are kept together in one project folder (e.g. your NFS project dir). The SLURM config expects:
+SLURM scripts, data, and outputs are kept together in one project folder
+(e.g. your NFS project directory). The SLURM config expects:
 
 - `PROJECT_DIR/data` — input TIFs (any subdirs)
 - `PROJECT_DIR/brainreg_outputs_<atlas>/` — registration outputs
@@ -31,7 +33,8 @@ At a minimum:
 For each registered subject folder created by Phase 1:
 1. Open the subject in `napari` using your brainrender/segmentation workflow.
 2. Add probe tracks/injections.
-3. Save back into the subject’s `segmentation/` folder in the locations expected by the Python visualizers:
+3. Save back into the subject's `segmentation/` folder in the locations
+   expected by the Python visualizers:
    - `segmentation/atlas_space/tracks/*.npy`
    - optional `segmentation/atlas_space/regions/*.obj`
 
@@ -41,12 +44,15 @@ importable):
 
 1. Probe HTML:
    - `python -m bg_viz_pipeline.scripts.probes_to_html <atlas> <brainreg_dir> <out.html> [--regions ...]`
+
 2. Atlas viewer PNGs:
    - configure `bg_viz_pipeline/presets/viewer_presets.json`, then run:
-     ```bash
-    python -m bg_viz_pipeline.scripts.brainreg_viewer              # all presets
-    python -m bg_viz_pipeline.scripts.brainreg_viewer --only-subject ROI-1
-    python -m bg_viz_pipeline.scripts.brainreg_viewer --only-subdir ds_MPX-R-0033_...
-     ```
 
-Requires a brainglobe environment (e.g. `module load brainglobe/2025-07-06`) and SLURM for Phase 1.
+```bash
+python -m bg_viz_pipeline.scripts.brainreg_viewer              # all presets
+python -m bg_viz_pipeline.scripts.brainreg_viewer --only-subject ROI-1
+python -m bg_viz_pipeline.scripts.brainreg_viewer --only-subdir ds_MPX-R-0033_...
+```
+
+Use a conda environment with BrainGlobe installed
+(e.g. `brainglobe-env`; `pip install brainglobe`).
