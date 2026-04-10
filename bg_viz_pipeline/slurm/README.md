@@ -1,4 +1,4 @@
-# `brainreg/slurm`
+# `bg_viz_pipeline/slurm`
 
 SLURM helper scripts for **Phase 1: registration** with `brainreg`.
 

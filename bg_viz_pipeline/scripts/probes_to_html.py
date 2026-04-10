@@ -44,8 +44,8 @@ import numpy as np
 
 from brainrender import Scene
 from brainrender.actors import Points
-from brainreg.lib.camera_helpers import create_camera
-from brainreg.lib.styles import (
+from bg_viz_pipeline.lib.camera_helpers import create_camera
+from bg_viz_pipeline.lib.styles import (
     REGION_ALPHA,
     CUSTOM_REGION_COLOR,
     CUSTOM_REGION_ALPHA,

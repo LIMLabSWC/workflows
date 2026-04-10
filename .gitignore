@@ -6,5 +6,5 @@
 __pycache__/
 *.py[cod]
 
-# Brainreg module caches
-brainreg/__pycache__/
+# bg_viz_pipeline module caches
+bg_viz_pipeline/__pycache__/

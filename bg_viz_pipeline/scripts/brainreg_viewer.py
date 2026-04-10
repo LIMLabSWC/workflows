@@ -8,8 +8,8 @@ from pathlib import Path
 import numpy as np
 from brainrender import Scene, settings
 from brainrender.actors import Points
-from brainreg.lib.camera_helpers import create_camera
-from brainreg.lib.styles import (
+from bg_viz_pipeline.lib.camera_helpers import create_camera
+from bg_viz_pipeline.lib.styles import (
     REGION_ALPHA,
     ROOT_ALPHA,
     ROOT_COLOR,
