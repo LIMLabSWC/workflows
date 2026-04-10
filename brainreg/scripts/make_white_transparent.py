@@ -27,7 +27,11 @@ def main() -> None:
     )
     p.add_argument("input_dir", type=Path, help="Folder containing PNGs")
     p.add_argument("output_dir", type=Path, help="Folder to write new PNGs")
-    p.add_argument("--overwrite", action="store_true", help="Overwrite output files if they already exist")
+    p.add_argument(
+        "--overwrite",
+        action="store_true",
+        help="Overwrite output files if they already exist",
+    )
     args = p.parse_args()
 
     in_dir: Path = args.input_dir

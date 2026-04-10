@@ -27,7 +27,10 @@ settings.SCREENSHOT_TRANSPARENT_BACKGROUND = False
 
 
 def subject_from_folder(folder: Path) -> str:
-    """Extract subject ID from a brainreg folder name like ds_SUBJECT_YYYYMMDD_..."""
+    """
+    Extract subject ID from a brainreg folder name like
+    ds_SUBJECT_YYYYMMDD_...
+    """
     name = folder.name
     if name.startswith("ds_"):
         parts = name.split("_")
@@ -38,7 +41,10 @@ def subject_from_folder(folder: Path) -> str:
 
 def _sanitize_for_filename(s: str) -> str:
     """Make a string safe for use as a filename."""
-    return "".join(c if c.isalnum() or c in ("-", "_", ".") else "_" for c in s)
+    return "".join(
+        c if c.isalnum() or c in ("-", "_", ".") else "_"  # noqa: PLR1704
+        for c in s
+    )
 
 
 # ============================
@@ -55,7 +61,12 @@ BASE_DIR = Path(
 
 
 def render_one(preset: dict) -> None:
-    """Render one PNG for a preset. Requires ``.../atlas_space/tracks`` with ≥1 ``.npy``."""
+    """
+    Render one PNG for a preset.
+
+    Requires ``.../atlas_space/tracks`` with at least one ``.npy``.
+    """
+
     # Unpack preset parameters
     brainreg_dir = BASE_DIR / preset["BRAINREG_SUBDIR"]
     regions_to_show = preset["REGIONS_TO_SHOW"]
@@ -64,7 +75,9 @@ def render_one(preset: dict) -> None:
     camera_elevation_deg = preset["CAMERA_ELEVATION_DEG"]
     slice_mode = preset.get("SLICE_MODE", "none")
     plane_depth = preset.get("PLANE_DEPTH", 0.0)
-    custom_plane_normal = tuple(preset.get("CUSTOM_PLANE_NORMAL", (0.0, 0.0, 1.0)))
+    custom_plane_normal = tuple(
+        preset.get("CUSTOM_PLANE_NORMAL", (0.0, 0.0, 1.0))
+    )
     show_root = preset.get("SHOW_ROOT", True)
     max_points = preset.get("MAX_POINTS", 5000)
 
@@ -73,14 +86,11 @@ def render_one(preset: dict) -> None:
     regions_dir = atlas_space_dir / "regions"
     cells_path = brainreg_dir / "brainmapper" / "points" / "points.npy"
 
-    # if not tracks_dir.exists():
-    #     raise FileNotFoundError(f"Tracks directory not found: {tracks_dir}")
-
     subject_id = subject_from_folder(brainreg_dir)
     scene = Scene(atlas_name=ATLAS_NAME, title=subject_id)
     scene.plotter.window.SetOffScreenRendering(True)
 
-    # Atlas regions
+    # Add atlas regions
     for region in regions_to_show:
         scene.add_brain_region(region, alpha=REGION_ALPHA, silhouette=True)
 
@@ -119,7 +129,7 @@ def render_one(preset: dict) -> None:
     else:
         active_camera = None
 
-    # Probe tracks
+    # Add probe tracks
     for npy_path in sorted(tracks_dir.glob("*.npy")):
         coords = np.load(npy_path)
         scene.add(
@@ -131,12 +141,16 @@ def render_one(preset: dict) -> None:
             )
         )
 
-    # Custom segmented regions
+    # Add custom segmented regions
     if regions_dir.exists():
         for obj_path in sorted(regions_dir.glob("*.obj")):
-            scene.add(str(obj_path), color=CUSTOM_REGION_COLOR, alpha=CUSTOM_REGION_ALPHA)
+            scene.add(
+                str(obj_path),
+                color=CUSTOM_REGION_COLOR,
+                alpha=CUSTOM_REGION_ALPHA,
+            )
 
-    # Brainmapper cells
+    # Add brainmapper cells
     if cells_path.exists():
         cells = np.load(cells_path)
         total_cells = len(cells)
@@ -255,13 +269,18 @@ if __name__ == "__main__":
     parser.add_argument(
         "--only-subdir",
         type=str,
-        help="Only render presets whose BRAINREG_SUBDIR contains this substring.",
+        help=(
+            "Only render presets whose BRAINREG_SUBDIR contains this "
+            "substring."
+        ),
     )
     parser.add_argument(
         "--only-subject",
         type=str,
-        help="Only render presets whose derived subject_id (from folder name) "
-        "contains this substring (e.g. 'ROI-1', 'MPX-R-0033').",
+        help=(
+            "Only render presets whose derived subject_id (from folder name) "
+            "contains this substring (e.g. 'ROI-1', 'MPX-R-0033')."
+        ),
     )
     args = parser.parse_args()
 

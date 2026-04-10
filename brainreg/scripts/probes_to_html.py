@@ -209,7 +209,10 @@ else:
                 ordered_union.append(acr)
     regions_to_show = ordered_union
     if regions_to_show:
-        print(f"Using automatically derived regions: {', '.join(regions_to_show)}")
+        print(
+            "Using automatically derived regions: "
+            f"{', '.join(regions_to_show)}"
+        )
         print("\n")
         print(
             "If you want to omit regions from this list, "
@@ -225,7 +228,11 @@ for reg in regions_to_show:
     scene.add_brain_region(reg, alpha=REGION_ALPHA)
 
 for obj_path in custom_region_files:
-    scene.add(str(obj_path), color=CUSTOM_REGION_COLOR, alpha=CUSTOM_REGION_ALPHA)
+    scene.add(
+        str(obj_path),
+        color=CUSTOM_REGION_COLOR,
+        alpha=CUSTOM_REGION_ALPHA,
+    )
 
 # ----------------------------
 # Load and add probe tracks

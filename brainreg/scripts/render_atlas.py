@@ -134,7 +134,7 @@ def _apply_slice(
         plane_arg = slice_mode
 
     if plane_arg is not None:
-        # Caps cut meshes (brainreg_viewer omits this — open cuts). Solid-looking slice faces.
+        # Caps cut meshes; brainreg_viewer uses open cuts. Solid-looking faces.
         scene.slice(plane=plane_arg, actors=None, close_actors=True)
 
 
@@ -143,7 +143,8 @@ def main() -> None:
 
     regions = _region_acronyms(scene, REGION_MODE)
     for i in range(0, len(regions), _REGION_BATCH_SIZE):
-        scene.add_brain_region(*regions[i : i + _REGION_BATCH_SIZE], alpha=REGION_ALPHA)
+        batch = regions[i : i + _REGION_BATCH_SIZE]
+        scene.add_brain_region(*batch, alpha=REGION_ALPHA)
 
     ub = _union_bounds(scene)
     if ub is not None:
@@ -166,13 +167,34 @@ def main() -> None:
     else:
         scene.render(interactive=True)
 
-    # Screenshot only for these normals (otherwise skip); filenames include SLICE_MODE.
-    if CUSTOM_PLANE_NORMAL == (1.0, 0.0, 0.0) or CUSTOM_PLANE_NORMAL == (-1.0, 0.0, 0.0):
-        scene.screenshot(name=f"atlas_screenshot_{SLICE_MODE}_frontal.png", scale=2)
-    elif CUSTOM_PLANE_NORMAL == (0.0, 0.0, -1.0) or CUSTOM_PLANE_NORMAL == (0.0, 0.0, 1.0):
-        scene.screenshot(name=f"atlas_screenshot_{SLICE_MODE}_sagittal.png", scale=2)
-    elif CUSTOM_PLANE_NORMAL == (0.0, 1.0, 0.0) or CUSTOM_PLANE_NORMAL == (0.0, -1.0, 0.0):
-        scene.screenshot(name=f"atlas_screenshot_{SLICE_MODE}_horizontal.png", scale=2)
+    # Screenshot only for these normals; filenames include SLICE_MODE.
+    frontal = (
+        CUSTOM_PLANE_NORMAL == (1.0, 0.0, 0.0)
+        or CUSTOM_PLANE_NORMAL == (-1.0, 0.0, 0.0)
+    )
+    sagittal = (
+        CUSTOM_PLANE_NORMAL == (0.0, 0.0, -1.0)
+        or CUSTOM_PLANE_NORMAL == (0.0, 0.0, 1.0)
+    )
+    horizontal = (
+        CUSTOM_PLANE_NORMAL == (0.0, 1.0, 0.0)
+        or CUSTOM_PLANE_NORMAL == (0.0, -1.0, 0.0)
+    )
+    if frontal:
+        scene.screenshot(
+            name=f"atlas_screenshot_{SLICE_MODE}_frontal.png",
+            scale=2,
+        )
+    elif sagittal:
+        scene.screenshot(
+            name=f"atlas_screenshot_{SLICE_MODE}_sagittal.png",
+            scale=2,
+        )
+    elif horizontal:
+        scene.screenshot(
+            name=f"atlas_screenshot_{SLICE_MODE}_horizontal.png",
+            scale=2,
+        )
 
 
 if __name__ == "__main__":
