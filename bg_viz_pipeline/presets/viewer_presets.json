@@ -2,7 +2,7 @@
   {
     "BRAINREG_SUBDIR": "ds_MPX-R-0033_250606_133230_25_25_ch02_chan_2_red",
     "REGIONS_TO_SHOW": ["M2", "cc-ec-cing-dwm"],
-    "CAMERA_DISTANCE_FACTOR": 2.0,
+    "CAMERA_DISTANCE_FACTOR": 4.0,
     "CAMERA_ROTATION_DEG": -45.0,
     "CAMERA_ELEVATION_DEG": -15.0,
     "SLICE_MODE": "none"
@@ -10,7 +10,7 @@
   {
     "BRAINREG_SUBDIR": "ds_MPX-R-0033_250606_133230_25_25_ch02_chan_2_red",
     "REGIONS_TO_SHOW": ["M2", "cc-ec-cing-dwm"],
-    "CAMERA_DISTANCE_FACTOR": 2.0,
+    "CAMERA_DISTANCE_FACTOR": 4.0,
     "CAMERA_ROTATION_DEG": -45.0,
     "CAMERA_ELEVATION_DEG": -15.0,
     "SLICE_MODE": "custom",
@@ -20,7 +20,7 @@
   {
     "BRAINREG_SUBDIR": "ds_MPX-R-0033_250606_133230_25_25_ch02_chan_2_red",
     "REGIONS_TO_SHOW": ["M2", "cc-ec-cing-dwm"],
-    "CAMERA_DISTANCE_FACTOR": 2.0,
+    "CAMERA_DISTANCE_FACTOR": 4.0,
     "CAMERA_ROTATION_DEG": 45.0,
     "CAMERA_ELEVATION_DEG": -15.0,
     "SLICE_MODE": "custom",
@@ -30,7 +30,7 @@
   {
     "BRAINREG_SUBDIR": "ds_MPX-R-0032_250606_132031_25_25_ch02_chan_2_red",
     "REGIONS_TO_SHOW": ["M2", "cc-ec-cing-dwm"],
-    "CAMERA_DISTANCE_FACTOR": 2.0,
+    "CAMERA_DISTANCE_FACTOR": 4.0,
     "CAMERA_ROTATION_DEG": -45.0,
     "CAMERA_ELEVATION_DEG": -30.0,
     "SLICE_MODE": "none"
@@ -38,7 +38,7 @@
   {
     "BRAINREG_SUBDIR": "ds_ROI-1_230620_102737_25_25_ch02_chan_2_red_2x4shankNPX",
     "REGIONS_TO_SHOW": ["M2", "PrL", "MO", "IL", "S1-bf", "Am-u"],
-    "CAMERA_DISTANCE_FACTOR": 2.0,
+    "CAMERA_DISTANCE_FACTOR": 4.0,
     "CAMERA_ROTATION_DEG": -45.0,
     "CAMERA_ELEVATION_DEG": -30.0,
     "SLICE_MODE": "none"
@@ -46,7 +46,7 @@
   {
     "BRAINREG_SUBDIR": "ds_ROI-1_230620_102737_25_25_ch02_chan_2_red_2x4shankNPX",
     "REGIONS_TO_SHOW": ["M2", "PrL", "MO", "IL", "S1-bf", "Am-u"],
-    "CAMERA_DISTANCE_FACTOR": 2.0,
+    "CAMERA_DISTANCE_FACTOR": 4.0,
     "CAMERA_ROTATION_DEG": -45.0,
     "CAMERA_ELEVATION_DEG": -30.0,
     "SLICE_MODE": "custom",
@@ -57,7 +57,7 @@
   {
     "BRAINREG_SUBDIR": "ds_ROI-1_230620_102737_25_25_ch02_chan_2_red_2x4shankNPX",
     "REGIONS_TO_SHOW": ["M2", "PrL", "MO", "IL", "S1-bf", "Am-u"],
-    "CAMERA_DISTANCE_FACTOR": 2.0,
+    "CAMERA_DISTANCE_FACTOR": 4.0,
     "CAMERA_ROTATION_DEG": -45.0,
     "CAMERA_ELEVATION_DEG": -30.0,
     "SLICE_MODE": "custom",
@@ -68,7 +68,7 @@
   {
     "BRAINREG_SUBDIR": "ds_ROI-1_230620_102737_25_25_ch02_chan_2_red_2x4shankNPX",
     "REGIONS_TO_SHOW": ["M2", "PrL", "MO", "IL", "S1", "Am-u"],
-    "CAMERA_DISTANCE_FACTOR": 2.0,
+    "CAMERA_DISTANCE_FACTOR": 4.0,
     "CAMERA_ROTATION_DEG": 45.0,
     "CAMERA_ELEVATION_DEG": -30.0,
     "SLICE_MODE": "custom",
@@ -79,7 +79,7 @@
   {
     "BRAINREG_SUBDIR": "ds_ROI-2_220721_100551_25_25_ch02_chan_2_red_mCherryvirus2",
     "REGIONS_TO_SHOW": ["Am-u", "S1-bf", "S2"],
-    "CAMERA_DISTANCE_FACTOR": 2.0,
+    "CAMERA_DISTANCE_FACTOR": 4.0,
     "CAMERA_ROTATION_DEG": -45.0,
     "CAMERA_ELEVATION_DEG": -30.0,
     "SLICE_MODE": "none"
@@ -87,7 +87,7 @@
   {
     "BRAINREG_SUBDIR": "ds_ROI-2_220721_100551_25_25_ch02_chan_2_red_mCherryvirus2",
     "REGIONS_TO_SHOW": ["Am-u", "S1-bf", "S2"],
-    "CAMERA_DISTANCE_FACTOR": 2.0,
+    "CAMERA_DISTANCE_FACTOR": 4.0,
     "CAMERA_ROTATION_DEG": -45.0,
     "CAMERA_ELEVATION_DEG": -30.0,
     "SLICE_MODE": "custom",
@@ -98,7 +98,7 @@
   {
     "BRAINREG_SUBDIR": "ds_ROI-2_220721_100551_25_25_ch02_chan_2_red_mCherryvirus2",
     "REGIONS_TO_SHOW": ["Am-u", "S1-bf", "S2"],
-    "CAMERA_DISTANCE_FACTOR": 2.0,
+    "CAMERA_DISTANCE_FACTOR": 4.0,
     "CAMERA_ROTATION_DEG": 45.0,
     "CAMERA_ELEVATION_DEG": -30.0,
     "SLICE_MODE": "custom",
@@ -109,7 +109,7 @@
   {
     "BRAINREG_SUBDIR": "ds_CAP30_220913_154529_25_25_ch03_chan_3_green",
     "REGIONS_TO_SHOW": ["CA1", "CA2", "CA3", "DG"],
-    "CAMERA_DISTANCE_FACTOR": 1.0,
+    "CAMERA_DISTANCE_FACTOR": 2.0,
     "CAMERA_ROTATION_DEG": 20.0,
     "CAMERA_ELEVATION_DEG": -20.0,
     "SLICE_MODE": "custom",
@@ -120,7 +120,7 @@
   {
     "BRAINREG_SUBDIR": "ds_CAP30_220913_154529_25_25_ch03_chan_3_green",
     "REGIONS_TO_SHOW": ["Cb"],
-    "CAMERA_DISTANCE_FACTOR": 1.5,
+    "CAMERA_DISTANCE_FACTOR": 3.0,
     "CAMERA_ROTATION_DEG": 160.0,
     "CAMERA_ELEVATION_DEG": -20.0,
     "SLICE_MODE": "custom",
@@ -131,7 +131,7 @@
   {
     "BRAINREG_SUBDIR": "ds_CAP30_220913_154529_25_25_ch03_chan_3_green",
     "REGIONS_TO_SHOW": [""],
-    "CAMERA_DISTANCE_FACTOR": 2,
+    "CAMERA_DISTANCE_FACTOR": 4.0,
     "CAMERA_ROTATION_DEG": -45,
     "CAMERA_ELEVATION_DEG": -30.0,
     "SLICE_MODE": "none",

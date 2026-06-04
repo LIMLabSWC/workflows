@@ -26,11 +26,11 @@ try:
 except Exception:
     pass
 
-ATLAS_NAME = "swc_female_rat_50um"
+ATLAS_NAME = "viktors_tweaked_warp_swc_female_rat_25um"
 REGION_ALPHA = 1.0
 REGION_MODE = "leaves"  # "leaves" | "all"
 
-CAMERA_DISTANCE_FACTOR = 2.0
+CAMERA_DISTANCE_FACTOR = 4.0
 CAMERA_ROTATION_DEG = 135.0
 CAMERA_ELEVATION_DEG = -30.0
 _BASE_FRONTAL_AZIMUTH_DEG = 180.0
@@ -139,7 +139,7 @@ def _apply_slice(
 
 
 def main() -> None:
-    scene = Scene(atlas_name=ATLAS_NAME, title=ATLAS_NAME, root=False)
+    scene = Scene(atlas_name=ATLAS_NAME, title=ATLAS_NAME, root=False, check_latest=False)
 
     regions = _region_acronyms(scene, REGION_MODE)
     for i in range(0, len(regions), _REGION_BATCH_SIZE):

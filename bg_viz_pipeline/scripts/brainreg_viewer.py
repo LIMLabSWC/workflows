@@ -52,7 +52,7 @@ def _sanitize_for_filename(s: str) -> str:
 # ============================
 
 # Atlas name used by brainreg for these data
-ATLAS_NAME = "swc_female_rat_50um"
+ATLAS_NAME = "viktors_tweaked_warp_swc_female_rat_25um"
 
 # Base directory with all subjects
 BASE_DIR = Path(
@@ -87,7 +87,7 @@ def render_one(preset: dict) -> None:
     cells_path = brainreg_dir / "brainmapper" / "points" / "points.npy"
 
     subject_id = subject_from_folder(brainreg_dir)
-    scene = Scene(atlas_name=ATLAS_NAME, title=subject_id)
+    scene = Scene(atlas_name=ATLAS_NAME, title=subject_id, check_latest=False)
     scene.plotter.window.SetOffScreenRendering(True)
 
     # Add atlas regions
