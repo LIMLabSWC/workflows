@@ -56,7 +56,7 @@ ATLAS_NAME = "viktors_tweaked_warp_swc_female_rat_25um"
 
 # Base directory with all subjects
 BASE_DIR = Path(
-    "/home/viktor/use_cases"
+    "/media/viktor/DataDrive/use_cases"
 )
 
 
