@@ -1,0 +1,443 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>PWM combined simulator</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root {
+    --bg:#f7f8fb; --panel:#fff; --ink:#111827; --muted:#4b5563;
+    --grid:#d1d5db; --pwm:#111827; --target:#4f46e5; --filter:#16a34a;
+    --accent:#f59e0b; --soft:#fbfdff;
+  }
+  body { margin:0; font-family:Arial, Helvetica, sans-serif; background:var(--bg); color:var(--ink); }
+  main { max-width:1280px; margin:26px auto; padding:0 18px 40px; }
+  h1 { margin:0 0 6px; font-size:32px; }
+  p { color:var(--muted); line-height:1.45; margin-top:0; }
+  .panel { background:var(--panel); border-radius:18px; padding:18px; box-shadow:0 8px 28px rgba(0,0,0,.08); }
+  .controls { display:grid; grid-template-columns:1.25fr 1fr 1fr 1fr; gap:14px; margin:16px 0; }
+  .control { border:1px solid #e5e7eb; border-radius:12px; padding:12px; background:var(--soft); }
+  label { display:block; font-weight:700; font-size:14px; margin-bottom:8px; }
+  input[type=range], select, textarea, input[type=text] { width:100%; box-sizing:border-box; }
+  textarea {
+    min-height:88px; resize:vertical;
+    font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size:13px; line-height:1.35;
+  }
+  button {
+    border:0; border-radius:10px; padding:10px 12px; background:#111827;
+    color:white; font-weight:700; cursor:pointer;
+  }
+  button.light { background:#eef2ff; color:#312e81; }
+  button.secondary { background:#4b5563; }
+  .button-row { display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
+  .value { font-weight:400; color:var(--muted); }
+  svg { width:100%; height:auto; border-radius:12px; background:#fbfdff; margin-top:8px; }
+  .axis { stroke:var(--ink); stroke-width:2; }
+  .grid { stroke:var(--grid); stroke-dasharray:4 6; }
+  .pwm { fill:none; stroke:var(--pwm); stroke-width:2.2; stroke-linejoin:round; }
+  .target { fill:none; stroke:var(--target); stroke-width:3; stroke-dasharray:7 5; }
+  .filtered { fill:none; stroke:var(--filter); stroke-width:4.5; }
+  .sample { fill:var(--target); stroke:white; stroke-width:2; }
+  .bar { fill:#fef3c7; stroke:var(--accent); }
+  .txt { font-size:16px; fill:var(--ink); }
+  .small { font-size:13px; fill:var(--muted); }
+  .legend { display:flex; gap:18px; flex-wrap:wrap; color:var(--muted); font-size:14px; margin-top:10px; }
+  .key::before { content:""; display:inline-block; width:24px; height:4px; margin-right:8px; vertical-align:middle; background:currentColor; }
+  .pwmKey { color:var(--pwm); } .targetKey { color:var(--target); } .filterKey { color:var(--filter); } .barKey { color:var(--accent); }
+  .explain { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:12px; }
+  .note { padding:12px; border-radius:12px; background:#f3f4f6; color:#374151; font-size:14px; line-height:1.45; }
+  @media (max-width:950px) { .controls,.explain { grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+<main>
+  <h1>PWM simulator: per-pulse duty cycles + realistic filtering</h1>
+  <p>
+    The PWM carrier is the fast ON/OFF switching. The duty cycle can be generated
+    from a sine/triangle/ramp, or read directly from your editable duty-cycle
+    list. The low-pass filter shows what happens after electrical filtering,
+    motor inertia, LED/eye averaging, etc.
+  </p>
+
+  <div class="panel">
+    <div class="controls">
+      <div class="control">
+        <label>Duty cycles per pulse / waveform table</label>
+        <textarea id="duties">5, 8, 16, 28, 42, 58, 73, 84, 92, 95, 92, 84, 73, 58, 42, 27, 16, 8</textarea>
+        <div class="button-row">
+          <button class="light" id="sineBtn">Sine table</button>
+          <button class="light" id="rampBtn">Ramp table</button>
+          <button class="light" id="randomBtn">Random table</button>
+        </div>
+      </div>
+
+      <div class="control">
+        <label>Duty source</label>
+        <select id="sourceMode">
+          <option value="table" selected>Use table, one value per pulse</option>
+          <option value="sine">Continuous sine formula</option>
+          <option value="triangle">Continuous triangle formula</option>
+          <option value="ramp">Continuous ramp formula</option>
+        </select>
+        <label style="margin-top:12px;">PWM carrier frequency: <span id="pwmVal" class="value"></span></label>
+        <input id="pwmFreq" type="range" min="10" max="500" value="180">
+      </div>
+
+      <div class="control">
+        <label>Signal frequency: <span id="sigVal" class="value"></span></label>
+        <input id="sigFreq" type="range" min="1" max="50" value="5">
+        <label style="margin-top:12px;">Low-pass cutoff: <span id="cutVal" class="value"></span></label>
+        <input id="cutoff" type="range" min="1" max="150" value="18">
+      </div>
+
+      <div class="control">
+        <label>Low-pass filter</label>
+        <select id="filterToggle">
+          <option value="on" selected>ON: smoothed output</option>
+          <option value="off">OFF: raw PWM only</option>
+        </select>
+        <label style="margin-top:12px;">View length: <span id="viewVal" class="value"></span></label>
+        <input id="viewCycles" type="range" min="1" max="5" value="2">
+        <label style="margin-top:12px;">Animation speed: <span id="speedVal" class="value"></span></label>
+        <input id="speed" type="range" min="0" max="100" value="15">
+        <div class="button-row">
+          <button id="pauseBtn" class="secondary">Pause</button>
+          <button id="exportBtn">Export SVG</button>
+        </div>
+      </div>
+    </div>
+
+    <svg id="svg" viewBox="0 0 1160 690" aria-label="PWM simulator">
+      <line x1="80" y1="500" x2="1080" y2="500" class="axis"/>
+      <line x1="80" y1="90" x2="80" y2="500" class="axis"/>
+      <text x="1040" y="528" class="small">time</text>
+      <text x="25" y="102" class="small">voltage / level</text>
+
+      <g id="grid"></g>
+      <path id="target" class="target"></path>
+      <path id="filtered" class="filtered"></path>
+      <path id="pwm" class="pwm"></path>
+      <g id="samples"></g>
+      <g id="bars"></g>
+
+      <text id="readout" x="90" y="45" class="txt"></text>
+      <text x="90" y="654" class="small">
+        Bottom bars: one PWM period each. Yellow width = ON time/duty cycle. Dashed outline = full period.
+      </text>
+      <text id="ratioText" x="90" y="675" class="small"></text>
+    </svg>
+
+    <div class="legend">
+      <span class="key pwmKey">raw PWM carrier</span>
+      <span class="key targetKey">desired duty-cycle envelope</span>
+      <span class="key filterKey">low-pass filtered output</span>
+      <span class="key barKey">per-pulse duty bars</span>
+    </div>
+
+    <div class="explain">
+      <div class="note">
+        <b>Table mode:</b> the list is repeated as a waveform cycle. Each PWM
+        pulse takes the next duty value from the list. This is easy to understand
+        and good for teaching.
+      </div>
+      <div class="note">
+        <b>Continuous mode:</b> duty is calculated from a formula for every pulse.
+        This is closer to real PWM synthesis. Smoother output needs a high
+        carrier/signal ratio and an appropriate low-pass cutoff.
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+const svg = document.getElementById("svg");
+const dutiesBox = document.getElementById("duties");
+const sourceMode = document.getElementById("sourceMode");
+const pwmFreq = document.getElementById("pwmFreq");
+const sigFreq = document.getElementById("sigFreq");
+const cutoff = document.getElementById("cutoff");
+const filterToggle = document.getElementById("filterToggle");
+const viewCycles = document.getElementById("viewCycles");
+const speed = document.getElementById("speed");
+
+const pwmVal = document.getElementById("pwmVal");
+const sigVal = document.getElementById("sigVal");
+const cutVal = document.getElementById("cutVal");
+const viewVal = document.getElementById("viewVal");
+const speedVal = document.getElementById("speedVal");
+const readout = document.getElementById("readout");
+const ratioText = document.getElementById("ratioText");
+
+const pwmPath = document.getElementById("pwm");
+const targetPath = document.getElementById("target");
+const filteredPath = document.getElementById("filtered");
+const grid = document.getElementById("grid");
+const samples = document.getElementById("samples");
+const bars = document.getElementById("bars");
+
+const X0 = 80, X1 = 1080, Y0 = 500, Y1 = 110;
+const W = X1 - X0, H = Y0 - Y1;
+const BAR_Y = 555, BAR_H = 24;
+let phase = 0;
+let paused = false;
+
+function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+function x(t) { return X0 + t * W; }
+function y(v) { return Y0 - clamp(v, 0, 1) * H; }
+function clearNode(node) { while (node.firstChild) node.removeChild(node.firstChild); }
+
+function addSVG(tag, attrs, parent) {
+  const el = document.createElementNS("http://www.w3.org/2000/svg", tag);
+  for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v);
+  parent.appendChild(el);
+  return el;
+}
+
+function parseDuties() {
+  const vals = dutiesBox.value
+    .split(/[\s,;]+/)
+    .map(v => Number(v.trim()))
+    .filter(v => Number.isFinite(v))
+    .map(v => clamp(v, 0, 100) / 100);
+  return vals.length ? vals : [0.5];
+}
+
+function triangle01(p) {
+  p = p - Math.floor(p);
+  return p < 0.5 ? p * 2 : 2 - p * 2;
+}
+
+function dutyEnvelope(signalPhase, pulseIndex) {
+  const p = signalPhase - Math.floor(signalPhase);
+  const mode = sourceMode.value;
+
+  if (mode === "table") {
+    const vals = parseDuties();
+    // One table cycle = one signal cycle.
+    const idx = Math.floor(p * vals.length) % vals.length;
+    return vals[idx];
+  }
+  if (mode === "sine") return 0.5 + 0.45 * Math.sin(2 * Math.PI * p);
+  if (mode === "triangle") return 0.05 + 0.90 * triangle01(p);
+  if (mode === "ramp") return 0.05 + 0.90 * p;
+  return 0.5;
+}
+
+function makeGrid(totalTime, fSig, fPwm) {
+  clearNode(grid);
+  const signalPeriod = 1 / fSig;
+
+  for (let t = 0; t <= totalTime + 1e-9; t += signalPeriod) {
+    const xx = x(t / totalTime);
+    addSVG("line", {x1:xx, x2:xx, y1:Y1-20, y2:BAR_Y+52, class:"grid"}, grid);
+  }
+
+  const pwmPeriod = 1 / fPwm;
+  const maxGridLines = 180;
+  const step = Math.max(1, Math.ceil((totalTime / pwmPeriod) / maxGridLines));
+  let k = 0;
+  for (let t = 0; t <= totalTime + 1e-9; t += pwmPeriod) {
+    if (k % step === 0) {
+      const xx = x(t / totalTime);
+      addSVG("line", {x1:xx, x2:xx, y1:Y0, y2:Y0+16, stroke:"#cbd5e1", "stroke-width":"1"}, grid);
+    }
+    k++;
+  }
+}
+
+function makeDutyBars(totalTime, fPwm, fSig) {
+  clearNode(bars);
+  const pwmPeriod = 1 / fPwm;
+  const pulseCount = Math.floor(totalTime * fPwm);
+  const maxBars = 120;
+  const step = Math.max(1, Math.ceil(pulseCount / maxBars));
+
+  for (let p = 0; p < pulseCount; p += step) {
+    const t = p * pwmPeriod;
+    const tNext = Math.min(totalTime, (p + step) * pwmPeriod);
+    const xx = x(t / totalTime);
+    const ww = x(tNext / totalTime) - xx;
+    const duty = dutyEnvelope(t * fSig + phase, p);
+
+    addSVG("rect", {
+      x:xx, y:BAR_Y, width:ww, height:BAR_H, rx:4,
+      fill:"none", stroke:"#64748b", "stroke-dasharray":"5 4"
+    }, bars);
+
+    addSVG("rect", {
+      x:xx, y:BAR_Y, width:ww * duty, height:BAR_H, rx:4, class:"bar"
+    }, bars);
+
+    if (ww > 18) {
+      addSVG("text", {
+        x:xx + 4, y:BAR_Y + 17, class:"small"
+      }, bars).textContent = Math.round(duty * 100);
+    }
+  }
+}
+
+function makeSamples(totalTime, fPwm, fSig) {
+  clearNode(samples);
+  const pwmPeriod = 1 / fPwm;
+  const pulseCount = Math.floor(totalTime * fPwm);
+  const maxDots = 200;
+  const step = Math.max(1, Math.ceil(pulseCount / maxDots));
+
+  for (let p = 0; p <= pulseCount; p += step) {
+    const t = p * pwmPeriod;
+    const duty = dutyEnvelope(t * fSig + phase, p);
+    addSVG("circle", {
+      cx:x(t / totalTime), cy:y(duty), r:3.2, class:"sample"
+    }, samples);
+  }
+}
+
+function update() {
+  const fPwm = Number(pwmFreq.value);
+  const fSig = Number(sigFreq.value);
+  const fCut = Number(cutoff.value);
+  const cycles = Number(viewCycles.value);
+  const totalTime = cycles / fSig;
+  const filterOn = filterToggle.value === "on";
+
+  pwmVal.textContent = fPwm + " Hz";
+  sigVal.textContent = fSig + " Hz";
+  cutVal.textContent = fCut + " Hz";
+  viewVal.textContent = cycles + " signal cycle" + (cycles > 1 ? "s" : "");
+  speedVal.textContent = speed.value === "0" ? "stopped" : speed.value;
+
+  const ratio = fPwm / fSig;
+  const ratioRounded = Math.round(ratio * 10) / 10;
+  readout.textContent =
+    `Carrier/signal ratio = ${ratioRounded}:1, about ${ratioRounded} PWM pulses per waveform cycle.`;
+
+  ratioText.textContent =
+    ratio < 20
+      ? "Low ratio: expect obvious stepping/ripple. Increase PWM frequency or lower signal frequency."
+      : "Higher carrier/signal ratio gives more duty updates per waveform cycle and a smoother filtered result.";
+
+  makeGrid(totalTime, fSig, fPwm);
+  makeDutyBars(totalTime, fPwm, fSig);
+  makeSamples(totalTime, fPwm, fSig);
+
+  const n = 5200;
+  const dt = totalTime / n;
+  const tau = 1 / (2 * Math.PI * fCut);
+  const alpha = dt / (tau + dt);
+
+  let filt = dutyEnvelope(phase, 0);
+  let pwmD = "", targetD = "", filteredD = "";
+
+  for (let i = 0; i <= n; i++) {
+    const t = i * dt;
+    const screenT = t / totalTime;
+    const pulseIndex = Math.floor(t * fPwm);
+    const pulseStart = pulseIndex / fPwm;
+    const dutyThisPulse = dutyEnvelope(pulseStart * fSig + phase, pulseIndex);
+
+    const carrierPhase = t * fPwm - Math.floor(t * fPwm);
+    const pwmLevel = carrierPhase < dutyThisPulse ? 1 : 0;
+
+    const targetLevel = dutyEnvelope(t * fSig + phase, pulseIndex);
+    filt += alpha * (pwmLevel - filt);
+
+    const xx = x(screenT);
+
+    if (i === 0) {
+      pwmD += `M ${xx} ${y(pwmLevel)}`;
+      targetD += `M ${xx} ${y(targetLevel)}`;
+      filteredD += `M ${xx} ${y(filterOn ? filt : pwmLevel)}`;
+    } else {
+      pwmD += ` L ${xx} ${y(pwmLevel)}`;
+      targetD += ` L ${xx} ${y(targetLevel)}`;
+      filteredD += ` L ${xx} ${y(filterOn ? filt : pwmLevel)}`;
+    }
+  }
+
+  pwmPath.setAttribute("d", pwmD);
+  targetPath.setAttribute("d", targetD);
+  filteredPath.setAttribute("d", filteredD);
+  filteredPath.style.display = filterOn ? "block" : "none";
+}
+
+document.getElementById("sineBtn").addEventListener("click", () => {
+  const n = 36;
+  const vals = [];
+  for (let i = 0; i < n; i++) {
+    vals.push(Math.round(50 + 45 * Math.sin((i / n) * 2 * Math.PI - Math.PI / 2)));
+  }
+  dutiesBox.value = vals.join(", ");
+  sourceMode.value = "table";
+});
+
+document.getElementById("rampBtn").addEventListener("click", () => {
+  const n = 24;
+  const vals = [];
+  for (let i = 0; i < n; i++) vals.push(Math.round(5 + 90 * i / (n - 1)));
+  dutiesBox.value = vals.join(", ");
+  sourceMode.value = "table";
+});
+
+document.getElementById("randomBtn").addEventListener("click", () => {
+  const n = 24;
+  const vals = [];
+  for (let i = 0; i < n; i++) vals.push(Math.round(5 + Math.random() * 90));
+  dutiesBox.value = vals.join(", ");
+  sourceMode.value = "table";
+});
+
+document.getElementById("pauseBtn").addEventListener("click", () => {
+  paused = !paused;
+  document.getElementById("pauseBtn").textContent = paused ? "Play" : "Pause";
+});
+
+document.getElementById("exportBtn").addEventListener("click", () => {
+  const clone = svg.cloneNode(true);
+  clone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+
+  // Standalone SVG fix:
+  // The on-screen SVG uses CSS classes from the HTML page.
+  // When exporting only the SVG node, those CSS rules would be missing.
+  // Therefore we inject the necessary SVG styles directly into the exported file.
+  const style = document.createElementNS("http://www.w3.org/2000/svg", "style");
+  style.textContent = `
+    .axis { stroke:#111827; stroke-width:2; fill:none; }
+    .grid { stroke:#d1d5db; stroke-dasharray:4 6; fill:none; }
+    .pwm { fill:none; stroke:#111827; stroke-width:2.2; stroke-linejoin:round; }
+    .target { fill:none; stroke:#4f46e5; stroke-width:3; stroke-dasharray:7 5; }
+    .filtered { fill:none; stroke:#16a34a; stroke-width:4.5; }
+    .sample { fill:#4f46e5; stroke:white; stroke-width:2; }
+    .bar { fill:#fef3c7; stroke:#f59e0b; }
+    .txt { font-family:Arial, Helvetica, sans-serif; font-size:16px; fill:#111827; }
+    .small { font-family:Arial, Helvetica, sans-serif; font-size:13px; fill:#4b5563; }
+    line, path, rect, circle, text { vector-effect: non-scaling-stroke; }
+  `;
+  clone.insertBefore(style, clone.firstChild);
+
+  const source = new XMLSerializer().serializeToString(clone);
+  const blob = new Blob([source], {type:"image/svg+xml;charset=utf-8"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "pwm_combined_simulator.svg";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+});
+
+[
+  dutiesBox, sourceMode, pwmFreq, sigFreq, cutoff,
+  filterToggle, viewCycles, speed
+].forEach(el => el.addEventListener("input", update));
+
+function animate() {
+  if (!paused) phase = (phase + Number(speed.value) * 0.00035) % 1;
+  update();
+  requestAnimationFrame(animate);
+}
+animate();
+</script>
+</body>
+</html>
