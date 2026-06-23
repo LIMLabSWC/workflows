@@ -42,17 +42,26 @@ For each registered subject folder created by Phase 1:
 From the `workflows` repo root (so the `bg_viz_pipeline/` package is
 importable):
 
-1. Probe HTML:
-   - `python -m bg_viz_pipeline.scripts.probes_to_html <atlas> <brainreg_dir> <out.html> [--regions ...]`
+Detailed usage: [`scripts/README.md`](scripts/README.md)  
+Preset JSON reference: [`presets/README.md`](presets/README.md)
 
-2. Atlas viewer PNGs:
-   - configure `bg_viz_pipeline/presets/viewer_presets.json`, then run:
+1. **Interactive atlas explorer** (slice / camera / pose experiments):
+   ```bash
+   python -m bg_viz_pipeline.scripts.render_atlas
+   ```
+   Edit the config block at the top of `scripts/render_atlas.py`.
 
-```bash
-python -m bg_viz_pipeline.scripts.brainreg_viewer              # all presets
-python -m bg_viz_pipeline.scripts.brainreg_viewer --only-subject ROI-1
-python -m bg_viz_pipeline.scripts.brainreg_viewer --only-subdir ds_MPX-R-0033_...
-```
+2. **Probe HTML:**
+   ```bash
+   python -m bg_viz_pipeline.scripts.probes_to_html <atlas> <brainreg_dir> <out.html> [--regions ...]
+   ```
+
+3. **Batch atlas + probe PNGs** — edit `presets/viewer_presets.json`, then:
+   ```bash
+   python -m bg_viz_pipeline.scripts.brainreg_viewer              # all presets
+   python -m bg_viz_pipeline.scripts.brainreg_viewer --only-subject ROI-1
+   python -m bg_viz_pipeline.scripts.brainreg_viewer --only-subdir ds_MPX-R-0033_...
+   ```
 
 Use a conda environment with BrainGlobe installed
 (e.g. `brainglobe-env`; `pip install brainglobe`).

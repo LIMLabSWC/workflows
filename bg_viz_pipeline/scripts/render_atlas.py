@@ -1,16 +1,18 @@
 #!/usr/bin/env python3
 """
-Interactive atlas viewer for exploring slice planes and camera angles.
+Interactive brain atlas viewer.
 
-Edit the configuration block below, then run::
+Loads an atlas, applies settings from the configuration block below, and
+opens an interactive render window. Optional screenshots are saved when a
+recognised custom slice normal is used.
+
+Run::
 
     python -m bg_viz_pipeline.scripts.render_atlas
 
-**Mesh mode** — set ``MESH_MODE`` to ``"root"`` (whole-brain shell) or
-``"regions"`` (leaf/all atlas regions, no root).
+Pipeline (``main``)::
 
-**Slice** — ``CLOSE_ACTORS`` chooses open cut (visible outline) vs solid cap.
-When capped, ``SLICE_CAP_COLOR`` colours only the cut face.
+    _add_meshes → apply_subject_pose → _make_camera → _apply_slice → render
 """
 
 from __future__ import annotations
@@ -20,6 +22,7 @@ from brainrender import Scene, settings
 from vedo import colors as vedo_colors
 
 from bg_viz_pipeline.lib.camera_helpers import create_camera
+from bg_viz_pipeline.lib.pose_helpers import SubjectPose, apply_subject_pose, rotate_vector
 
 # =============================================================================
 # Configuration — edit these values
@@ -38,9 +41,14 @@ REGION_MODE = "leaves"
 #              These tile the brain without overlapping. Usually what you want.
 #   "all"    — every named region, parents and children (overlapping meshes).
 
+# --- Camera ---
+# Total azimuth = _BASE_FRONTAL_AZIMUTH_DEG + CAMERA_ROTATION_DEG
 CAMERA_DISTANCE_FACTOR = 4.0
-CAMERA_ROTATION_DEG = 135.0
-CAMERA_ELEVATION_DEG = -30.0
+CAMERA_ROTATION_DEG = -45.0
+CAMERA_ELEVATION_DEG = -30.0  # along atlas y, not room up/down — see scripts/README.md
+_BASE_FRONTAL_AZIMUTH_DEG = 0.0
+
+SUBJECT_POSE: SubjectPose = "on_bulb"
 
 SLICE_MODE = "custom"  # "none", "frontal", "horizontal", "sagittal", "custom"
 PLANE_DEPTH = 0.27
@@ -48,7 +56,7 @@ CUSTOM_PLANE_NORMAL = (-1.0, 0.0, 0.0)
 CLOSE_ACTORS = True  # False = open cut (slice outline); True = solid cut face
 SLICE_CAP_COLOR = "salmon"  # cut-face colour when CLOSE_ACTORS is True; None = same as mesh
 
-PLOTTER_AXES = 0
+PLOTTER_AXES = 0  # 8 = labelled x/y/z; see scripts/README.md § Atlas coordinates
 
 # =============================================================================
 # brainrender / vedo defaults (usually leave as-is)
@@ -66,8 +74,40 @@ try:
 except Exception:
     pass
 
-_BASE_FRONTAL_AZIMUTH_DEG = 180.0
+
 _REGION_BATCH_SIZE = 256
+
+
+def _bounds_center(
+    bounds: tuple[float, float, float, float, float, float],
+) -> tuple[float, float, float]:
+    """Centre of a vtk-style bounding box; used as the pose rotation pivot."""
+    xmin, xmax, ymin, ymax, zmin, zmax = bounds
+    return (0.5 * (xmin + xmax), 0.5 * (ymin + ymax), 0.5 * (zmin + zmax))
+
+
+def _atlas_plane_normal(scene: Scene, slice_mode: str) -> tuple[float, float, float]:
+    """Look up a named BrainGlobe slice plane (frontal / horizontal / sagittal)."""
+    normals = scene.atlas.space.plane_normals
+    if slice_mode not in normals:
+        raise ValueError(
+            f"SLICE_MODE must be 'custom' or one of {sorted(normals)}, not {slice_mode!r}"
+        )
+    return tuple(normals[slice_mode])
+
+
+def _posed_slice_normal(
+    scene: Scene,
+    pose: SubjectPose,
+    slice_mode: str,
+    custom_plane_normal: tuple[float, float, float],
+) -> tuple[float, float, float]:
+    """Slice normal in atlas space, rotated to match the current specimen pose."""
+    if slice_mode == "custom":
+        base = custom_plane_normal
+    else:
+        base = _atlas_plane_normal(scene, slice_mode)
+    return rotate_vector(base, pose)
 
 
 def _all_region_acronyms(scene: Scene) -> list[str]:
@@ -211,15 +251,13 @@ def _refresh_silhouette(scene: Scene, actor) -> None:
 
 def _apply_slice(
     scene: Scene,
+    pose: SubjectPose,
     slice_mode: str | None,
     plane_depth: float,
     custom_plane_normal: tuple[float, float, float],
 ) -> None:
     """
-    Cut scene actors with a plane.
-
-    Plane presets: ``frontal``, ``horizontal``, ``sagittal``, or ``custom``
-    (uses ``PLANE_DEPTH`` and ``CUSTOM_PLANE_NORMAL``).
+    Cut scene actors with a plane in the posed coordinate frame.
 
     When ``CLOSE_ACTORS`` is True and ``SLICE_CAP_COLOR`` is set, the cut
     face is capped and coloured. Otherwise ``scene.slice`` is used as-is.
@@ -227,11 +265,8 @@ def _apply_slice(
     if slice_mode in (None, "none"):
         return
 
-    if slice_mode == "custom":
-        plane = _custom_plane(scene, plane_depth, custom_plane_normal)
-    else:
-        plane = slice_mode
-
+    normal = _posed_slice_normal(scene, pose, slice_mode, custom_plane_normal)
+    plane = _custom_plane(scene, plane_depth, normal)
     if plane is None:
         return
 
@@ -248,13 +283,12 @@ def _apply_slice(
 
 
 def _make_camera(scene: Scene):
-    """Camera framing all current actors, or ``None`` if the scene is empty."""
+    """Return a brainrender camera dict from the scene's current bounds."""
     ub = _union_bounds(scene)
     if ub is None:
         return None
-    xmin, xmax, ymin, ymax, zmin, zmax = ub
     return create_camera(
-        (xmin, xmax, ymin, ymax, zmin, zmax),
+        ub,
         distance_factor=CAMERA_DISTANCE_FACTOR,
         base_frontal_azimuth_deg=_BASE_FRONTAL_AZIMUTH_DEG,
         rotation_deg=CAMERA_ROTATION_DEG,
@@ -263,7 +297,7 @@ def _make_camera(scene: Scene):
 
 
 def main() -> None:
-    """Build the scene, apply slice/camera settings, render interactively."""
+    """Build the scene and open the interactive plotter."""
     show_root = MESH_MODE == "root"
     scene = Scene(
         atlas_name=ATLAS_NAME,
@@ -274,8 +308,13 @@ def main() -> None:
 
     _add_meshes(scene)
 
+    # Pose uses the centre *before* rotation so the brain spins in place.
+    ub = _union_bounds(scene)
+    if ub is not None:
+        apply_subject_pose(scene, SUBJECT_POSE, _bounds_center(ub))
+
     camera = _make_camera(scene)
-    _apply_slice(scene, SLICE_MODE, PLANE_DEPTH, CUSTOM_PLANE_NORMAL)
+    _apply_slice(scene, SUBJECT_POSE, SLICE_MODE, PLANE_DEPTH, CUSTOM_PLANE_NORMAL)
     scene.plotter.axes = PLOTTER_AXES
 
     if camera is not None:

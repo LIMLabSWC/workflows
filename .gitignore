@@ -1,6 +1,8 @@
 *.png
 !figures/
 !figures/**/*.png
+!bg_viz_pipeline/docs/figures/
+!bg_viz_pipeline/docs/figures/**/*.png
 
 # Python bytecode / caches
 __pycache__/
