@@ -1,5 +1,19 @@
 #!/usr/bin/env python3
-"""Batch-render brainreg scenes from JSON presets to PNG (offscreen)."""
+"""
+Batch-render brainreg scenes to PNG (offscreen).
+
+Reads presets from ``presets/viewer_presets.json``. For each preset, builds
+a scene with atlas regions, probe tracks, optional custom segmentation, and
+brainmapper cells, then saves a filename-encoded screenshot.
+
+Run::
+
+    python -m bg_viz_pipeline.scripts.brainreg_viewer [--only-dir ...] [--only-subject ...]
+
+Pipeline (``render_one``)::
+
+    add regions → style root → camera → add tracks / regions / cells → slice → render
+"""
 
 import argparse
 import json

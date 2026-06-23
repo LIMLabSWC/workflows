@@ -11,12 +11,15 @@ def _center_and_extent(
     return (center_x, center_y, center_z) and the maximum extent.
     """
     xmin, xmax, ymin, ymax, zmin, zmax = bounds
+    # Midpoint of the axis-aligned bounding box — orbit and look-at target.
     cx = 0.5 * (xmin + xmax)
     cy = 0.5 * (ymin + ymax)
     cz = 0.5 * (zmin + zmax)
     ex = xmax - xmin
     ey = ymax - ymin
     ez = zmax - zmin
+    # Largest edge length: a single scale for "how big is this brain?" so
+    # distance_factor means the same thing regardless of which axis is longest.
     max_extent = max(ex, ey, ez)
     return (cx, cy, cz), max_extent
 
@@ -42,25 +45,38 @@ def make_camera_from_angles(
 
     center, max_extent = _center_and_extent(bounds)
     cx, cy, cz = center
+    # Camera orbits on a sphere of this radius around ``center``.
     distance = distance_factor * max_extent
 
     az = math.radians(azimuth_deg)
     el = math.radians(elevation_deg)
 
-    # Spherical-style direction vector in world coordinates:
-    # y is "up" (superior-inferior); x/z form the horizontal plane.
+    # Unit direction from centre toward the camera, in spherical coordinates.
+    #
+    # Picture standing on the xz "floor", y pointing up (superior):
+    #   azimuth   — walk around the brain on a horizontal circle (0° = +x)
+    #   elevation — tilt along atlas +y / −y (see scripts/README.md § Atlas coordinates)
+    #
+    #   dx = cos(el) cos(az)   horizontal part along x
+    #   dy = sin(el)           vertical lift (0 when el = 0, on the xz ring)
+    #   dz = cos(el) sin(az)   horizontal part along z
+    #
+    # cos(el) shrinks the horizontal ring as you tilt toward the poles.
     dx = math.cos(el) * math.cos(az)
     dy = math.sin(el)
     dz = math.cos(el) * math.sin(az)
 
+    # Camera position = centre + distance × unit direction (not the other way:
+    # we place the eye on the sphere, then look back at the centre).
     pos = (cx + distance * dx, cy + distance * dy, cz + distance * dz)
 
     return dict(
         pos=pos,
-        focal_point=center,
-        viewup=up,
+        focal_point=center,  # always stare at the atlas centre
+        viewup=up,  # which way is "up" on screen (brainrender: −y)
         roll=0.0,
-        distance=distance,
+        distance=distance,  # nominal orbit radius (vedo/brainrender metadata)
+        # Near/far clip planes scaled to distance so the mesh stays in view.
         clipping_range=(0.1 * distance, 3.0 * distance),
     )
 
@@ -73,7 +89,7 @@ def create_camera(
     elevation_deg: float,
 ) -> Dict:
     """
-    Create a single atlas-aware camera from intuitive parameters:
+    Create a single atlas-aware camera from intuitive parameters.
 
     - bounds: six floats (xmin, xmax, ymin, ymax, zmin, zmax), e.g. from
       ``scene.root.bounds()`` or a union of actor bounds
@@ -83,6 +99,8 @@ def create_camera(
       to the frontal azimuth
     - elevation_deg: tilt up/down
     """
+    # Two-layer azimuth: a fixed "where is frontal for this atlas?" offset,
+    # plus a user knob for left/right orbit.  Elevation is independent (tilt).
     azimuth = base_frontal_azimuth_deg + rotation_deg
     return make_camera_from_angles(
         bounds,
@@ -90,4 +108,3 @@ def create_camera(
         azimuth_deg=azimuth,
         elevation_deg=elevation_deg,
     )
-
