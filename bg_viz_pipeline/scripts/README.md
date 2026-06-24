@@ -12,6 +12,7 @@ Requires a BrainGlobe conda env (e.g. `brainglobe-env`).
 | [`render_atlas.py`](render_atlas.py) | Config block at top of file | Interactive window (+ optional PNG) | Tuning slice, camera, pose on the atlas alone |
 | [`brainreg_viewer.py`](brainreg_viewer.py) | [`presets/viewer_presets.json`](../presets/viewer_presets.json) | One PNG per preset | Batch figures with probes + regions for real subjects |
 | [`probes_to_html.py`](probes_to_html.py) | CLI args | Interactive HTML | Shareable 3D probe view in a browser |
+| [`list_regions.py`](list_regions.py) | Config block at top of file | SVG in repo root | Per-probe region × shank summary tables |
 
 Preset field reference: [`presets/README.md`](../presets/README.md).
 
@@ -143,9 +144,46 @@ Output PNGs are written to the current directory. Filenames encode subject, came
 ```
 <brainreg_dir>/
   segmentation/atlas_space/tracks/*.npy    # required (at least one)
+  segmentation/atlas_space/tracks/*.csv   # optional (region tables per shank; for list_regions)
   segmentation/atlas_space/regions/*.obj   # optional
   brainmapper/points/points.npy            # optional
 ```
+
+---
+
+## `list_regions` — probe region × shank tables
+
+Builds a flat summary figure: one table per probe, shanks as columns, brain
+regions as rows. Cells use the same **BrainGlobe structure colours**
+(`rgb_triplet`) as brainrender — not Napari’s default label colormap.
+
+Edit the config block at the top of [`list_regions.py`](list_regions.py)
+(`ATLAS_NAME`, `BRAINREG_DIR`), then:
+
+```bash
+python -m bg_viz_pipeline.scripts.list_regions
+```
+
+Writes `probe_regions_<subject>.svg` to the **workflows repo root** (alongside
+other figure outputs like `atlas_screenshot_*.png`).
+
+### Input
+
+Per-shank CSV files under `segmentation/atlas_space/tracks/` with at least
+`Region acronym` (and `Region ID` in the atlas table for row ordering). Same
+files used by `probes_to_html.py` to auto-detect regions. Filename stems must
+follow `probe_<name>_shank_<n>` (e.g. `probe_PFC_shank_1.csv`).
+
+### Figure behaviour
+
+- **Rows / legend:** sorted by atlas region ID (stable hierarchy order;
+  independent of Napari trace direction).
+- **Cells:** coloured if that shank passes through the region; white otherwise.
+- **Layout:** square cells, vertical dividers between shanks, transparent SVG
+  background with tight crop.
+
+Tune `CELL_SIZE` and `LEGEND_COLS` in the script config block if the default
+layout is too cramped.
 
 ---
 

@@ -36,6 +36,7 @@ For each registered subject folder created by Phase 1:
 3. Save back into the subject's `segmentation/` folder in the locations
    expected by the Python visualizers:
    - `segmentation/atlas_space/tracks/*.npy`
+   - `segmentation/atlas_space/tracks/*.csv` (per-shank region tables; from brainreg tracks)
    - optional `segmentation/atlas_space/regions/*.obj`
 
 ## Phase 3 (Visualization, Python)
@@ -56,7 +57,14 @@ Preset JSON reference: [`presets/README.md`](presets/README.md)
    python -m bg_viz_pipeline.scripts.probes_to_html <atlas> <brainreg_dir> <out.html> [--regions ...]
    ```
 
-3. **Batch atlas + probe PNGs** — edit `presets/viewer_presets.json`, then:
+3. **Probe region tables (SVG):** edit `ATLAS_NAME` and `BRAINREG_DIR` in
+   `scripts/list_regions.py`, then:
+   ```bash
+   python -m bg_viz_pipeline.scripts.list_regions
+   ```
+   Output: `probe_regions_<subject>.svg` in the repo root.
+
+4. **Batch atlas + probe PNGs** — edit `presets/viewer_presets.json`, then:
    ```bash
    python -m bg_viz_pipeline.scripts.brainreg_viewer              # all presets
    python -m bg_viz_pipeline.scripts.brainreg_viewer --only-subject ROI-1

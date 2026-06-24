@@ -3,6 +3,7 @@
 !figures/**/*.png
 !bg_viz_pipeline/docs/figures/
 !bg_viz_pipeline/docs/figures/**/*.png
+*.svg
 
 # Python bytecode / caches
 __pycache__/
