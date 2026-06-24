@@ -76,6 +76,18 @@
     "CUSTOM_PLANE_NORMAL": [0.0, 0.0, 1.0],
     "SHOW_ROOT": false
   },
+
+  {
+    "BRAINREG_SUBDIR": "ds_ROI-1_230620_102737_25_25_ch02_chan_2_red_2x4shankNPX",
+    "REGIONS_TO_SHOW": ["Am-u", "BFR-u", "ic-cp-lfp-py", "CPu", "V-u", "cc-ec-cing-dwm", "S1-bf", "sox", "RT-u", "RT-a", "st", "fi", "S1-dz", "S1-tr", "CA3", "M2", "PrL", "MO", "IL"],
+    "CAMERA_DISTANCE_FACTOR": 4.0,
+    "CAMERA_ROTATION_DEG": -90.0,
+    "CAMERA_ELEVATION_DEG": 0.0,
+    "SLICE_MODE": "none",
+    "SHOW_ROOT": true
+  },
+
+
   {
     "BRAINREG_SUBDIR": "ds_ROI-2_220721_100551_25_25_ch02_chan_2_red_mCherryvirus2",
     "REGIONS_TO_SHOW": ["Am-u", "S1-bf", "S2"],
