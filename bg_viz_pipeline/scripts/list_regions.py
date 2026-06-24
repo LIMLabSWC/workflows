@@ -41,6 +41,8 @@ import numpy as np
 from brainglobe_atlasapi import BrainGlobeAtlas
 from matplotlib.patches import Patch
 
+from itertools import chain
+
 # =============================================================================
 # Constants
 # =============================================================================
@@ -458,8 +460,16 @@ def main() -> None:
     if not regions_per_shank:
         raise SystemExit(f"No region CSV files found in: {tracks_dir}")
 
+    print("--------------------------------")
+    print("These are the regions per shank: \n")
     for shank_name, regions in regions_per_shank.items():
         print(f"{shank_name}: {', '.join(regions)}")
+    print("-------------------------------- \n")
+
+    # All unique regions across shanks (first-seen order), preset-style list
+    all_unique_regions = list(dict.fromkeys(chain.from_iterable(regions_per_shank.values())))
+    formatted = "[" + ", ".join(f'"{r}"' for r in all_unique_regions) + "]"
+    print(f"These are all the unique regions in this brain:\n\n{formatted}")
 
     fig = make_figure(
         regions_per_shank,
