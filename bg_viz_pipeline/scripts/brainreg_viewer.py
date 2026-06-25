@@ -8,7 +8,7 @@ brainmapper cells, then saves a filename-encoded screenshot.
 
 Run::
 
-    python -m bg_viz_pipeline.scripts.brainreg_viewer [--only-dir ...] [--only-subject ...]
+    python -m bg_viz_pipeline.scripts.brainreg_viewer [--only-subdir ...] [--only-subject ...]
 
 Pipeline (``render_one``)::
 
@@ -22,10 +22,8 @@ from pathlib import Path
 import numpy as np
 from brainrender import Scene, settings
 from brainrender.actors import Points
-from bg_viz_pipeline.lib.camera_helpers import create_camera
+from bg_viz_pipeline.lib.view_config import ViewConfig
 from bg_viz_pipeline.lib.styles import (
-    REGION_ALPHA,
-    ROOT_ALPHA,
     ROOT_COLOR,
     CUSTOM_REGION_COLOR,
     CUSTOM_REGION_ALPHA,
@@ -80,20 +78,11 @@ def render_one(preset: dict) -> None:
 
     Requires ``.../atlas_space/tracks`` with at least one ``.npy``.
     """
+    config = ViewConfig.from_preset_dict(preset, atlas_name=ATLAS_NAME)
+    settings.SHADER_STYLE = config.shader_style
 
-    # Unpack preset parameters
-    brainreg_dir = BASE_DIR / preset["BRAINREG_SUBDIR"]
-    regions_to_show = preset["REGIONS_TO_SHOW"]
-    camera_distance_factor = preset["CAMERA_DISTANCE_FACTOR"]
-    camera_rotation_deg = preset["CAMERA_ROTATION_DEG"]
-    camera_elevation_deg = preset["CAMERA_ELEVATION_DEG"]
-    slice_mode = preset.get("SLICE_MODE", "none")
-    plane_depth = preset.get("PLANE_DEPTH", 0.0)
-    custom_plane_normal = tuple(
-        preset.get("CUSTOM_PLANE_NORMAL", (0.0, 0.0, 1.0))
-    )
-    show_root = preset.get("SHOW_ROOT", True)
-    max_points = preset.get("MAX_POINTS", 5000)
+    brainreg_dir = BASE_DIR / config.brainreg_subdir
+    regions_to_show = config.regions_to_show or []
 
     atlas_space_dir = brainreg_dir / "segmentation" / "atlas_space"
     tracks_dir = atlas_space_dir / "tracks"
@@ -101,18 +90,18 @@ def render_one(preset: dict) -> None:
     cells_path = brainreg_dir / "brainmapper" / "points" / "points.npy"
 
     subject_id = subject_from_folder(brainreg_dir)
-    scene = Scene(atlas_name=ATLAS_NAME, title=subject_id, check_latest=False)
+    scene = Scene(atlas_name=config.atlas_name, title=subject_id, check_latest=False)
     scene.plotter.window.SetOffScreenRendering(True)
 
     # Add atlas regions
     for region in regions_to_show:
-        scene.add_brain_region(region, alpha=REGION_ALPHA, silhouette=True)
+        scene.add_brain_region(region, alpha=config.region_alpha, silhouette=True)
 
     # Soften the whole-brain outline so regions/probes stand out
     if hasattr(scene, "root") and scene.root is not None:
 
-        if show_root:
-            scene.root.c(ROOT_COLOR).alpha(ROOT_ALPHA)
+        if config.show_root:
+            scene.root.c(ROOT_COLOR).alpha(config.root_alpha)
         else:
             scene.root.alpha(0)
 
@@ -132,13 +121,8 @@ def render_one(preset: dict) -> None:
         )
         print(f"{subject_id}: centre=({xmid:.1f}, {ymid:.1f}, {zmid:.1f})")
 
-        _BASE_FRONTAL_AZIMUTH_DEG = 180.0
-        active_camera = create_camera(
+        active_camera = config.make_camera(
             (xmin, xmax, ymin, ymax, zmin, zmax),
-            distance_factor=camera_distance_factor,
-            base_frontal_azimuth_deg=_BASE_FRONTAL_AZIMUTH_DEG,
-            rotation_deg=camera_rotation_deg,
-            elevation_deg=camera_elevation_deg,
         )
     else:
         active_camera = None
@@ -169,9 +153,9 @@ def render_one(preset: dict) -> None:
         cells = np.load(cells_path)
         total_cells = len(cells)
 
-        if total_cells > max_points:
-            step = total_cells / max_points
-            idx = (np.arange(max_points) * step).astype(int)
+        if total_cells > config.max_points:
+            step = total_cells / config.max_points
+            idx = (np.arange(config.max_points) * step).astype(int)
             cells = cells[idx]
 
         cells = Points(cells, radius=45, colors="palegoldenrod")
@@ -179,6 +163,9 @@ def render_one(preset: dict) -> None:
 
 
     # Optional slicing
+    slice_mode = config.slice_mode
+    plane_depth = config.plane_depth
+    custom_plane_normal = config.custom_plane_normal
     if slice_mode not in (None, "none"):
         if slice_mode == "custom":
             plane_arg = None
@@ -228,12 +215,12 @@ def render_one(preset: dict) -> None:
             )
 
     # Rendering and saving
-    scene.plotter.axes = 9
+    scene.plotter.axes = config.plotter_axes
 
     parts = [f"sub-{subject_id}"]
-    parts.append(f"dist-{camera_distance_factor:.2f}")
-    parts.append(f"rot-{camera_rotation_deg:.1f}")
-    parts.append(f"el-{camera_elevation_deg:.1f}")
+    parts.append(f"dist-{config.camera_distance_factor:.2f}")
+    parts.append(f"rot-{config.camera_rotation_deg:.1f}")
+    parts.append(f"el-{config.camera_elevation_deg:.1f}")
 
     if slice_mode and slice_mode not in ("none", None):
         parts.append(f"slice-{slice_mode}")

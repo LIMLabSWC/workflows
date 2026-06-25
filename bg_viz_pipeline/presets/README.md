@@ -1,6 +1,6 @@
 # Viewer presets (`viewer_presets.json`)
 
-JSON array consumed by [`brainreg_viewer.py`](../scripts/brainreg_viewer.py). Each object describes one PNG to render.
+JSON array consumed by [`brainreg_viewer.py`](../scripts/brainreg_viewer.py). Each object is parsed into a [`ViewConfig`](../lib/view_config.py) (same field names as the `render_atlas.py` config block).
 
 Edit the file, then from the repo root:
 
@@ -31,8 +31,19 @@ Script usage and workflow: [`scripts/README.md`](../scripts/README.md).
 | `SLICE_MODE` | string | `"none"` | `"none"`, `"frontal"`, `"horizontal"`, `"sagittal"`, or `"custom"` |
 | `PLANE_DEPTH` | number | `0.0` | Slice position along the plane normal, 0–1 (used when slicing) |
 | `CUSTOM_PLANE_NORMAL` | `[x, y, z]` | `[0, 0, 1]` | Plane direction when `SLICE_MODE` is `"custom"` |
+| `BASE_FRONTAL_AZIMUTH_DEG` | number | `180` | What `CAMERA_ROTATION_DEG = 0` means (interactive default is `0`) |
 | `SHOW_ROOT` | bool | `true` | Show whole-brain outline behind regions |
+| `ROOT_ALPHA` | number | `0.2` | Root mesh opacity when `SHOW_ROOT` is true |
+| `REGION_ALPHA` | number | `0.2` | Highlighted atlas region opacity |
 | `MAX_POINTS` | int | `5000` | Cap on brainmapper cells plotted |
+| `SUBJECT_POSE` | string | `"on_base"` | `"on_base"`, `"on_bulb"`, or `"on_side"` (batch applies in Phase 3) |
+| `CLOSE_ACTORS` | bool | `true` | Open cut vs solid cap (batch applies in Phase 3) |
+| `SLICE_CAP_COLOR` | string or `null` | `"salmon"` | Cut-face colour when capped (batch applies in Phase 3) |
+| `MESH_MODE` | string | `"regions"` | `"root"` or `"regions"` (batch applies in Phase 3) |
+| `REGION_MODE` | string | `"leaves"` | `"leaves"` or `"all"` when using region meshes |
+| `PLOTTER_AXES` | int | `0` | vedo axes mode (`8` = labelled x/y/z) |
+| `SHADER_STYLE` | string | `"plastic"` | `"cartoon"` or `"plastic"` |
+| `ATLAS_NAME` | string | from `brainreg_viewer.py` | Override atlas if needed |
 
 ---
 
@@ -88,6 +99,16 @@ Common custom normals (this atlas):
 }
 ```
 
+**Match interactive camera base (azimuth 0 instead of batch default 180)**
+
+```json
+{
+  "BASE_FRONTAL_AZIMUTH_DEG": 0.0
+}
+```
+
+(Add alongside the other fields in the same preset object.)
+
 **Hide root mesh**
 
 ```json
@@ -95,8 +116,6 @@ Common custom normals (this atlas):
   "SHOW_ROOT": false
 }
 ```
-
-(Add alongside the other fields in the same preset object.)
 
 ---
 
@@ -112,20 +131,8 @@ Use this to match a figure back to the preset that produced it.
 
 ---
 
-## Not in presets yet
-
-| Feature | Where it works today |
-|---------|---------------------|
-| `SUBJECT_POSE` (`on_base` / `on_bulb` / `on_side`) | [`render_atlas.py`](../scripts/render_atlas.py) only |
-| `CLOSE_ACTORS` / coloured slice cap | `render_atlas.py` only |
-| `MESH_MODE` root vs regions | `render_atlas.py` only |
-
-To batch these, add fields to JSON and read them in `brainreg_viewer.render_one()` using the same order as `render_atlas`: add meshes → pose → camera → slice.
-
----
-
 ## Tips
 
 - Duplicate a preset object to try a small change (e.g. `PLANE_DEPTH` or `CAMERA_ROTATION_DEG`).
 - Use `--only-subject` or `--only-subdir` to render a subset while iterating.
-- Camera numbers tuned in `render_atlas` transfer to presets, but `brainreg_viewer` uses frontal azimuth `180°` internally — you may need to offset rotation compared to `render_atlas`'s `_BASE_FRONTAL_AZIMUTH_DEG`.
+- When copying camera settings from `render_atlas`, include `BASE_FRONTAL_AZIMUTH_DEG` if you use a non-default value there.

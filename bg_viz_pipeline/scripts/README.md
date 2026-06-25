@@ -38,6 +38,9 @@ Pose and camera are **intentionally separate**: changing pose moves the brain, n
 
 ### Configuration reference
 
+Settings below match the field names in [`viewer_presets.json`](../presets/viewer_presets.json)
+(parsed by [`lib/view_config.py`](../lib/view_config.py)).
+
 | Variable | Values / type | What it does |
 |----------|---------------|--------------|
 | `MESH_MODE` | `"root"` \| `"regions"` | Whole-brain shell vs atlas regions |
@@ -46,13 +49,14 @@ Pose and camera are **intentionally separate**: changing pose moves the brain, n
 | `CAMERA_DISTANCE_FACTOR` | float | Zoom (larger = farther) |
 | `CAMERA_ROTATION_DEG` | float | Orbit left/right |
 | `CAMERA_ELEVATION_DEG` | float | Camera tilt along atlas y (see [Atlas coordinates](#atlas-coordinates)) |
-| `_BASE_FRONTAL_AZIMUTH_DEG` | float | What “rotation = 0” means for this atlas |
+| `BASE_FRONTAL_AZIMUTH_DEG` | float | What “rotation = 0” means for this atlas |
 | `SLICE_MODE` | `"none"`, `"frontal"`, `"horizontal"`, `"sagittal"`, `"custom"` | Cut plane |
 | `PLANE_DEPTH` | 0–1 | Position along normal (`0` = one extreme, `1` = other) |
 | `CUSTOM_PLANE_NORMAL` | `(x, y, z)` | Direction when `SLICE_MODE == "custom"` |
 | `CLOSE_ACTORS` | bool | `False` = open cut; `True` = solid cap |
 | `SLICE_CAP_COLOR` | colour name or `None` | Cap colour when `CLOSE_ACTORS` is True |
 | `PLOTTER_AXES` | int | vedo axes mode (`0` = off, `8` = labelled x/y/z) |
+| `SHADER_STYLE` | `"cartoon"` \| `"plastic"` | brainrender shader (`cartoon` in interactive by default) |
 
 BrainGlobe axis names for this atlas: frontal **+x**, horizontal **+y**, sagittal **+z**.
 
@@ -85,7 +89,7 @@ mesh rotates:
 1. Set `SUBJECT_POSE`.
 2. Adjust `CAMERA_*` until the view looks right.
 3. Set slice mode and `PLANE_DEPTH`.
-4. Note the values that worked (or copy them into a preset — see below).
+4. Note the values that worked (copy into [`viewer_presets.json`](../presets/viewer_presets.json) — same field names).
 
 ### Cookbook (starting points)
 
@@ -98,7 +102,7 @@ SUBJECT_POSE = "on_base"
 CAMERA_DISTANCE_FACTOR = 4.0
 CAMERA_ROTATION_DEG = -45.0
 CAMERA_ELEVATION_DEG = -30.0
-_BASE_FRONTAL_AZIMUTH_DEG = 0.0
+BASE_FRONTAL_AZIMUTH_DEG = 0.0
 SLICE_MODE = "custom"
 CUSTOM_PLANE_NORMAL = (-1.0, 0.0, 0.0)  # frontal-ish
 PLANE_DEPTH = 0.4
@@ -135,9 +139,9 @@ python -m bg_viz_pipeline.scripts.brainreg_viewer --only-subdir ds_MPX-R-0033
 
 Output PNGs are written to the current directory. Filenames encode subject, camera, and slice settings (e.g. `sub-MPX-R-0033_dist-4.00_rot--45.0_el--15.0.png`).
 
-**Note:** `brainreg_viewer` uses a fixed frontal azimuth of `180°` internally. `render_atlas` uses `_BASE_FRONTAL_AZIMUTH_DEG` from its config block — the same `CAMERA_ROTATION_DEG` may not match visually between the two scripts until you align those bases.
+**Note:** Batch presets default to `BASE_FRONTAL_AZIMUTH_DEG = 180` when omitted (preserves existing figures). Interactive `render_atlas` uses `0` by default — set the same value in both places when copying camera settings.
 
-**Pose:** `SUBJECT_POSE` is only in `render_atlas` today. To batch-render with pose, add the field to presets and wire it in `brainreg_viewer` (same order as `render_atlas`: pose → camera → slice).
+**Pose / slice cap:** `SUBJECT_POSE`, `CLOSE_ACTORS`, and `SLICE_CAP_COLOR` are parsed from presets but only applied by `render_atlas` until Phase 3 unifies the batch pipeline.
 
 ### Expected subject layout
 
@@ -205,6 +209,7 @@ See the module docstring in [`probes_to_html.py`](probes_to_html.py) for full op
 
 | Module | Role |
 |--------|------|
+| [`lib/view_config.py`](../lib/view_config.py) | Shared `ViewConfig` for interactive + preset JSON |
 | [`lib/bounds_helpers.py`](../lib/bounds_helpers.py) | Scene bounding box and centre |
 | [`lib/mesh_helpers.py`](../lib/mesh_helpers.py) | Atlas root/regions geometry |
 | [`lib/slice_helpers.py`](../lib/slice_helpers.py) | Slice planes, posed normals, cap colouring |

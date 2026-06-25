@@ -20,13 +20,13 @@ from __future__ import annotations
 from brainrender import Scene, settings
 
 from bg_viz_pipeline.lib.bounds_helpers import bounds_center, union_bounds
-from bg_viz_pipeline.lib.camera_helpers import create_camera
 from bg_viz_pipeline.lib.mesh_helpers import add_atlas_geometry
 from bg_viz_pipeline.lib.pose_helpers import SubjectPose, apply_subject_pose
 from bg_viz_pipeline.lib.slice_helpers import apply_slice
+from bg_viz_pipeline.lib.view_config import ViewConfig
 
 # =============================================================================
-# Configuration — edit these values
+# Configuration — edit these values (same field names as viewer_presets.json)
 # =============================================================================
 
 ATLAS_NAME = "viktors_tweaked_warp_swc_female_rat_25um"
@@ -43,11 +43,11 @@ REGION_MODE = "leaves"
 #   "all"    — every named region, parents and children (overlapping meshes).
 
 # --- Camera ---
-# Total azimuth = _BASE_FRONTAL_AZIMUTH_DEG + CAMERA_ROTATION_DEG
+# Total azimuth = BASE_FRONTAL_AZIMUTH_DEG + CAMERA_ROTATION_DEG
 CAMERA_DISTANCE_FACTOR = 4.0
 CAMERA_ROTATION_DEG = -45.0
-CAMERA_ELEVATION_DEG = -30.0  # along atlas y, not room up/down — see scripts/README.md
-_BASE_FRONTAL_AZIMUTH_DEG = 0.0
+CAMERA_ELEVATION_DEG = -30.0  # along atlas y — see scripts/README.md
+BASE_FRONTAL_AZIMUTH_DEG = 0.0
 
 SUBJECT_POSE: SubjectPose = "on_base"
 
@@ -58,13 +58,13 @@ CLOSE_ACTORS = True  # False = open cut (slice outline); True = solid cut face
 SLICE_CAP_COLOR = "salmon"  # cut-face colour when CLOSE_ACTORS is True; None = same as mesh
 
 PLOTTER_AXES = 9  # 8 = labelled x/y/z; see scripts/README.md § Atlas coordinates
+SHADER_STYLE = "cartoon"
 
 # =============================================================================
 # brainrender / vedo defaults (usually leave as-is)
 # =============================================================================
 
 settings.LIGHTING = "default"
-settings.SHADER_STYLE = "cartoon"
 settings.SHOW_AXES = False
 settings.SCREENSHOT_TRANSPARENT_BACKGROUND = False
 
@@ -76,54 +76,70 @@ except Exception:
     pass
 
 
-def _make_camera(scene: Scene):
-    """Return a brainrender camera dict from the scene's current bounds."""
-    ub = union_bounds(scene)
-    if ub is None:
-        return None
-    return create_camera(
-        ub,
-        distance_factor=CAMERA_DISTANCE_FACTOR,
-        base_frontal_azimuth_deg=_BASE_FRONTAL_AZIMUTH_DEG,
-        rotation_deg=CAMERA_ROTATION_DEG,
-        elevation_deg=CAMERA_ELEVATION_DEG,
+def _view_config() -> ViewConfig:
+    """Build ``ViewConfig`` from the module constants above."""
+    return ViewConfig(
+        atlas_name=ATLAS_NAME,
+        mesh_mode=MESH_MODE,
+        region_mode=REGION_MODE,
+        root_alpha=ROOT_ALPHA,
+        region_alpha=REGION_ALPHA,
+        subject_pose=SUBJECT_POSE,
+        camera_distance_factor=CAMERA_DISTANCE_FACTOR,
+        camera_rotation_deg=CAMERA_ROTATION_DEG,
+        camera_elevation_deg=CAMERA_ELEVATION_DEG,
+        base_frontal_azimuth_deg=BASE_FRONTAL_AZIMUTH_DEG,
+        slice_mode=SLICE_MODE,
+        plane_depth=PLANE_DEPTH,
+        custom_plane_normal=CUSTOM_PLANE_NORMAL,
+        close_actors=CLOSE_ACTORS,
+        slice_cap_color=SLICE_CAP_COLOR,
+        plotter_axes=PLOTTER_AXES,
+        shader_style=SHADER_STYLE,
     )
 
 
 def main() -> None:
     """Build the scene and open the interactive plotter."""
-    show_root = MESH_MODE == "root"
+    config = _view_config()
+    settings.SHADER_STYLE = config.shader_style
+
+    show_root = config.mesh_mode == "root"
     scene = Scene(
-        atlas_name=ATLAS_NAME,
-        title=ATLAS_NAME,
+        atlas_name=config.atlas_name,
+        title=config.atlas_name,
         root=show_root,
         check_latest=False,
     )
 
     add_atlas_geometry(
         scene,
-        mesh_mode=MESH_MODE,
-        region_mode=REGION_MODE,
-        root_alpha=ROOT_ALPHA,
-        region_alpha=REGION_ALPHA,
+        mesh_mode=config.mesh_mode,
+        region_mode=config.region_mode,
+        root_alpha=config.root_alpha,
+        region_alpha=config.region_alpha,
     )
 
     # Pose uses the centre *before* rotation so the brain spins in place.
     ub = union_bounds(scene)
     if ub is not None:
-        apply_subject_pose(scene, SUBJECT_POSE, bounds_center(ub))
+        apply_subject_pose(scene, config.subject_pose, bounds_center(ub))
 
-    camera = _make_camera(scene)
+    camera = None
+    ub = union_bounds(scene)
+    if ub is not None:
+        camera = config.make_camera(ub)
+
     apply_slice(
         scene,
-        SUBJECT_POSE,
-        SLICE_MODE,
-        PLANE_DEPTH,
-        CUSTOM_PLANE_NORMAL,
-        close_actors=CLOSE_ACTORS,
-        slice_cap_color=SLICE_CAP_COLOR,
+        config.subject_pose,
+        config.slice_mode,
+        config.plane_depth,
+        config.custom_plane_normal,
+        close_actors=config.close_actors,
+        slice_cap_color=config.slice_cap_color,
     )
-    scene.plotter.axes = PLOTTER_AXES
+    scene.plotter.axes = config.plotter_axes
 
     if camera is not None:
         scene.render(camera=camera, interactive=True)
@@ -131,31 +147,23 @@ def main() -> None:
         scene.render(interactive=True)
 
     # Screenshot only for these normals; filenames include SLICE_MODE.
-    frontal = (
-        CUSTOM_PLANE_NORMAL == (1.0, 0.0, 0.0)
-        or CUSTOM_PLANE_NORMAL == (-1.0, 0.0, 0.0)
-    )
-    sagittal = (
-        CUSTOM_PLANE_NORMAL == (0.0, 0.0, -1.0)
-        or CUSTOM_PLANE_NORMAL == (0.0, 0.0, 1.0)
-    )
-    horizontal = (
-        CUSTOM_PLANE_NORMAL == (0.0, 1.0, 0.0)
-        or CUSTOM_PLANE_NORMAL == (0.0, -1.0, 0.0)
-    )
+    n = config.custom_plane_normal
+    frontal = n == (1.0, 0.0, 0.0) or n == (-1.0, 0.0, 0.0)
+    sagittal = n == (0.0, 0.0, -1.0) or n == (0.0, 0.0, 1.0)
+    horizontal = n == (0.0, 1.0, 0.0) or n == (0.0, -1.0, 0.0)
     if frontal:
         scene.screenshot(
-            name=f"atlas_screenshot_{SLICE_MODE}_frontal.png",
+            name=f"atlas_screenshot_{config.slice_mode}_frontal.png",
             scale=2,
         )
     elif sagittal:
         scene.screenshot(
-            name=f"atlas_screenshot_{SLICE_MODE}_sagittal.png",
+            name=f"atlas_screenshot_{config.slice_mode}_sagittal.png",
             scale=2,
         )
     elif horizontal:
         scene.screenshot(
-            name=f"atlas_screenshot_{SLICE_MODE}_horizontal.png",
+            name=f"atlas_screenshot_{config.slice_mode}_horizontal.png",
             scale=2,
         )
 
