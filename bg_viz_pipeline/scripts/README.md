@@ -14,6 +14,7 @@ Requires a BrainGlobe conda env (e.g. `brainglobe-env`).
 | [`probes_to_html.py`](probes_to_html.py) | CLI args | Interactive HTML | Shareable 3D probe view in a browser |
 | [`list_regions.py`](list_regions.py) | `BRAINREG_DIR`, `CELL` at top of file | SVG + terminal region summary | Per-probe region × shank summary tables |
 | [`list_cell_counts.py`](list_cell_counts.py) | `SUMMARY_CSV`, `TOP_N` at top of file | SVG in repo root | Bar chart of cellfinder cells per atlas region |
+| [`make_white_transparent.py`](make_white_transparent.py) | CLI: input/output dirs | PNGs with white → alpha | Post-process batch PNGs for figures |
 
 Preset field reference: [`presets/README.md`](../presets/README.md).
 
@@ -147,7 +148,9 @@ If a pose looks flipped, edit ``POSE_ROTATIONS_DEG`` in [`lib/render.py`](../lib
 
 ### Screenshots
 
-With `slice_mode == "custom"`, recognised normals write `atlas_screenshot_<mode>_<view>.png` in the current directory after you close the window.
+With `slice_mode == "custom"` and a recognised `custom_plane_normal`, closing
+the window saves `atlas_screenshot_<mode>_<view>.png` in the current directory
+(see `maybe_save_atlas_screenshots` in `lib/render.py`).
 
 ---
 
@@ -259,6 +262,19 @@ See the module docstring in [`probes_to_html.py`](probes_to_html.py) for full op
 
 ---
 
+## `make_white_transparent` — PNG post-processing
+
+Makes pure white `(255, 255, 255)` pixels transparent. Useful after
+`batch_render` when figures need a clear background.
+
+```bash
+python -m bg_viz_pipeline.scripts.make_white_transparent ./pngs_in ./pngs_out
+```
+
+Requires Pillow (`pip install pillow`).
+
+---
+
 ## Advanced (library code)
 
 All 3D rendering shared by `interactive_render` and `batch_render` lives in one file:
@@ -267,4 +283,9 @@ All 3D rendering shared by `interactive_render` and `batch_render` lives in one 
 |--------|------|
 | [`lib/render.py`](../lib/render.py) | Constants, settings dicts, camera, pose, slice, scene setup, batch overlays |
 
-Figure scripts (`list_regions`, `list_cell_counts`) are standalone — they only import `DEFAULT_ATLAS_NAME` from `render.py`.
+Figure scripts (`list_regions`, `list_cell_counts`) are standalone — they only
+import `DEFAULT_ATLAS_NAME` from `render.py`.
+
+**Learning:** [`teaching/python_oop_exercises.md`](../../teaching/python_oop_exercises.md)
+walks through the OOP ideas behind this pipeline. For a modular `ViewConfig`
+version of the same render stack, see branch `refactor-to-batch-and-interactive`.

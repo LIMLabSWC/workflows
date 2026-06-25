@@ -65,7 +65,7 @@ Preset JSON reference: [`presets/README.md`](presets/README.md)
    Output: `probe_regions_<subject>.svg` in the repo root, plus a terminal
    summary of regions per shank and a copy-paste `REGIONS_TO_SHOW` list.
 
-4. **Cellfinder cells per region (SVG):** edit `SUMMARY_CSV` in
+4. **Cellfinder cells per region (SVG):** edit `SUMMARY_CSV` and `TOP_N` in
    `scripts/list_cell_counts.py`, then:
    ```bash
    python -m bg_viz_pipeline.scripts.list_cell_counts
@@ -81,3 +81,12 @@ Preset JSON reference: [`presets/README.md`](presets/README.md)
 
 Use a conda environment with BrainGlobe installed
 (e.g. `brainglobe-env`; `pip install brainglobe`).
+
+## Learning (optional)
+
+- [`teaching/python_oop_exercises.md`](../teaching/python_oop_exercises.md) —
+  hands-on Python OOP exercises tied to this pipeline (`SETTINGS` dict,
+  `settings_from_preset`, dataclass concepts).
+- Branch **`refactor-to-batch-and-interactive`** — modular `ViewConfig` and
+  multi-file `lib/` layout for studying the same pipeline with dataclasses in
+  production code.

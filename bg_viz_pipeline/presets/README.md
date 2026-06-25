@@ -1,6 +1,9 @@
 # Viewer presets (`viewer_presets.json`)
 
-JSON array consumed by [`batch_render.py`](../scripts/batch_render.py). Each object is converted to a settings dict by ``render.settings_from_preset()`` (same fields as the `SETTINGS` dict in `interactive_render.py`, but JSON keys are UPPER_SNAKE).
+JSON array consumed by [`batch_render.py`](../scripts/batch_render.py). Each object is
+converted to a settings dict by ``render.settings_from_preset()`` (shared
+camera/slice/pose/mesh fields with the ``SETTINGS`` dict in
+`interactive_render.py`, plus batch-only keys below; JSON keys are UPPER_SNAKE).
 
 Edit the file, then from the repo root:
 
@@ -41,7 +44,7 @@ Script usage and workflow: [`scripts/README.md`](../scripts/README.md).
 | `SLICE_CAP_COLOR` | string or `null` | none | Cut-face colour when `CLOSE_ACTORS` is true (defaults to `"salmon"` if capped) |
 | `MESH_MODE` | string | `"regions"` | `"root"` or `"regions"` (interactive-style atlas mesh) |
 | `REGION_MODE` | string | `"leaves"` | `"leaves"` or `"all"` when using region meshes |
-| `PLOTTER_AXES` | int | `0` | vedo axes mode (`8` = labelled x/y/z) |
+| `PLOTTER_AXES` | int | `0` | vedo axes mode (`0` = off; `8` or `9` = labelled cube axes) |
 | `SHADER_STYLE` | string | `"plastic"` | `"cartoon"` or `"plastic"` |
 | `ATLAS_NAME` | string | from `batch_render.py` | Override atlas if needed |
 

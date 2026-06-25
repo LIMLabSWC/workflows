@@ -2,9 +2,10 @@
 """
 Cellfinder cell counts per atlas region (SVG).
 
-Reads ``analysis/summary.csv``, keeps the top N regions by total cell count,
-draws left/right hemisphere bars coloured with BrainGlobe atlas colours, and
-saves an SVG to the workflows repo root.
+Reads ``analysis/summary.csv``, keeps the top ``TOP_N`` regions by total cell
+count (configurable at the top of the file), draws left/right hemisphere bars
+coloured with BrainGlobe atlas colours, and saves an SVG to the workflows repo
+root.
 
 Run from repo root::
 

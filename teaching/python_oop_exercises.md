@@ -1,7 +1,17 @@
 # Python OOP exercises — from variables to dataclasses
 
-A hands-on path for the ideas used in `bg_viz_pipeline` (`ViewConfig`,
-`@dataclass`, `frozen`, `@classmethod`, type hints).
+A hands-on path for OOP ideas used in `bg_viz_pipeline` (`@dataclass`,
+`frozen`, `@classmethod`, type hints, settings bundles).
+
+**Which code does this track?** The pipeline uses a **`SETTINGS` dict** in
+`interactive_render.py` and **`settings_from_preset()`** in `lib/render.py`.
+Parts 0–10 build up to that pattern (dicts in Part 0/8/10; Part 11 reads the
+real files). Parts 6–10 also teach **dataclasses** as the same idea in a
+stricter form.
+
+**Learning branch:** A modular **`ViewConfig`** dataclass version lives on
+`refactor-to-batch-and-interactive` (`lib/view_config.py`, `scene_pipeline.py`).
+Use that branch if you want to trace frozen dataclasses in production code.
 
 **How to use this file**
 
@@ -203,8 +213,11 @@ class Car:
         self.fuel = fuel
 ```
 
-**Question:** In `view_config.py`, what is the point of
-`MeshMode = Literal["root", "regions"]`?
+**Question:** In `lib/render.py`, preset JSON uses keys like `"MESH_MODE": "root"`.
+In `interactive_render.py`, the same idea is `"mesh_mode": "root"` in `SETTINGS`.
+On branch `refactor-to-batch-and-interactive`, `view_config.py` uses
+`MeshMode = Literal["root", "regions"]` — why might you prefer `Literal` over
+plain `str`?
 
 ---
 
@@ -221,6 +234,10 @@ class ViewConfig:
 ```
 
 Read `@dataclass` as: **“Python, please generate extra boilerplate for this class.”**
+
+(On this branch, render settings are a plain dict; on
+`refactor-to-batch-and-interactive` they are a `@dataclass(frozen=True)` called
+`ViewConfig` — same role, different packaging.)
 
 ### Exercise 5.1 — A tiny decorator (read first, then type)
 
@@ -345,7 +362,8 @@ print(cam.rotation_deg)
 # cam.rotation_deg = 0.0
 ```
 
-**Question:** Why might `ViewConfig` be frozen in the pipeline?
+**Question:** Why treat render settings as fixed for one run (dict you don’t
+mutate mid-pipeline, or a `frozen` dataclass on the learning branch)?
 
 ### Exercise 7.2 — New object instead of mutation
 
@@ -395,8 +413,9 @@ print(h)
 **TODO:** Add `from_csv_row(cls, row: list[str])` that expects
 `[address, rooms, "yes"|"no"]`.
 
-**Link to pipeline:** `ViewConfig.from_preset_dict(...)` does the same job for
-`viewer_presets.json`.
+**Link to pipeline:** `render.settings_from_preset(...)` in `lib/render.py` does
+the same job for `viewer_presets.json` (JSON UPPER_SNAKE → `SETTINGS`-style
+lower_snake keys).
 
 ---
 
@@ -434,9 +453,11 @@ class Node:
 
 ---
 
-## Part 10 — Put it together — mini ViewConfig
+## Part 10 — Put it together — mini settings bundle
 
-Build a tiny version of what `view_config.py` does.
+Build a tiny version of the preset → settings translation. In the pipeline this
+is a plain dict + `settings_from_preset()`; here you practice the same idea with
+a dataclass (same pattern as `ViewConfig` on `refactor-to-batch-and-interactive`).
 
 ### Exercise 10.1 — `RenderSettings` dataclass
 
@@ -465,7 +486,7 @@ class RenderSettings:
         pass
 
 
-# --- interactive path (like interactive_render.py config block) ---
+# --- interactive path (like interactive_render.py SETTINGS dict) ---
 interactive = RenderSettings(
     camera_distance=4.0,
     camera_rotation_deg=-45.0,
@@ -487,8 +508,9 @@ print(interactive.describe())
 
 ### Exercise 10.2 — Map names like the real pipeline
 
-Real code uses `CAMERA_DISTANCE_FACTOR` in JSON but `camera_distance_factor`
-on the dataclass. Your `from_preset` is the **translation layer**.
+Presets use `CAMERA_DISTANCE_FACTOR` in JSON; `SETTINGS` in
+`interactive_render.py` uses `camera_distance_factor`. Your `from_preset` is the
+**translation layer** (same job as `settings_from_preset()` in `render.py`).
 
 **TODO:** Add a comment in your file listing 3 field pairs (JSON name → Python name).
 
@@ -504,17 +526,46 @@ Open these files **after** Parts 1–10:
 | `bg_viz_pipeline/scripts/interactive_render.py` | `SETTINGS` dict at top |
 | `bg_viz_pipeline/scripts/batch_render.py` | reads JSON → `settings_from_preset` |
 
-### Exercise 11.1 — Trace one value
+### Exercise 11.1 — Trace one value (interactive)
 
-Pick `CAMERA_ROTATION_DEG` in `interactive_render.py` and write the path:
+Pick `camera_rotation_deg` in the `SETTINGS` dict in `interactive_render.py`
+and write the path:
 
-1. Config constant name
-2. Passed into `ViewConfig(...)` as which field?
-3. Read in which function when building the camera?
+1. Dict key in `SETTINGS` (and its value)
+2. Which function in `main()` receives the whole `SETTINGS` dict first?
+3. Which function in `render.py` reads `config["camera_rotation_deg"]` when
+   building the camera?
 
-### Exercise 11.2 — Trace one preset key
+### Exercise 11.2 — Trace one preset key (batch)
 
-Pick one object in `viewer_presets.json`. Same three steps starting from JSON.
+Pick `CAMERA_ROTATION_DEG` in one object in `viewer_presets.json`. Same three
+steps, but start from JSON → `settings_from_preset()` → the settings dict passed
+to `apply_view`.
+
+<details>
+<summary>Exercise 11.1 — sketch answer (interactive)</summary>
+
+1. `SETTINGS["camera_rotation_deg"]` (e.g. `-45.0`)
+2. `render.apply_view(scene, SETTINGS)` (after `create_scene` / `add_atlas_content`)
+3. `make_camera` → `create_camera` (both in `render.py`; rotation used in
+   `create_camera` as `rotation_deg`)
+
+</details>
+
+<details>
+<summary>Exercise 11.2 — sketch answer (batch)</summary>
+
+1. e.g. `"CAMERA_ROTATION_DEG": -45.0` in `viewer_presets.json`
+2. `render.settings_from_preset(preset)` in `batch_render.render_one` →
+   `settings["camera_rotation_deg"]`
+3. `render.apply_view(scene, settings)` → `make_camera` → `create_camera`
+
+</details>
+
+### Optional — ViewConfig on the learning branch
+
+If you checked out `refactor-to-batch-and-interactive`, repeat 11.1–11.2 using
+`ViewConfig` / `scene_pipeline.apply_view` instead of `SETTINGS` / `render.apply_view`.
 
 ---
 
@@ -604,6 +655,6 @@ def describe(self) -> str:
 - Add the **live camera HUD** to `interactive_render` (orbit → read knob values).
 - Change one preset field and re-run `batch_render` — you’ll recognize every step.
 
-You don’t need to memorize decorators. You need to recognize: **“this is a
-bundled settings object built from my config block or JSON.”** Everything else
-is detail around that idea.
+You don’t need to memorize decorators. You need to recognize: **settings
+bundled in a dict (or dataclass) built from `SETTINGS` or JSON.** Everything
+else is detail around that idea.

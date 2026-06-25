@@ -481,6 +481,8 @@ def batch_png_filename(subject_id, config):
 
 
 def maybe_save_atlas_screenshots(scene, config):
+    if config.get("slice_mode") != "custom":
+        return
     n = config["custom_plane_normal"]
     if n in ((1.0, 0.0, 0.0), (-1.0, 0.0, 0.0)):
         tag = "frontal"

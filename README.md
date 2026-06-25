@@ -10,4 +10,5 @@ general enough for their own repo.
 | [`bg_viz_pipeline/`](bg_viz_pipeline/) | Brain registration, segmentation and visualization (SLURM, brainreg, brainrender, probe tables). |
 | [`rat_template_building/`](rat_template_building/) | Build 25 um rat brain template with `modelbuild.sh` (ANTs, QBatch, SLURM). |
 | [`hpc_tools/`](hpc_tools/) | Small HPC helper scripts. |
+| [`teaching/`](teaching/) | Python OOP exercises for `bg_viz_pipeline` (see also branch `refactor-to-batch-and-interactive`). |
 | [`figures/`](figures/) | Publication figures to link in HackMD and other external tools. |
