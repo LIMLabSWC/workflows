@@ -10,6 +10,13 @@ from bg_viz_pipeline.lib.styles import ROOT_COLOR
 from bg_viz_pipeline.lib.view_config import ViewConfig
 
 
+def init_brainrender_settings() -> None:
+    """Global brainrender defaults shared by interactive and batch scripts."""
+    settings.LIGHTING = "default"
+    settings.SHOW_AXES = False
+    settings.SCREENSHOT_TRANSPARENT_BACKGROUND = False
+
+
 def configure_brainrender(config: ViewConfig) -> None:
     """Apply per-render brainrender settings from ``config``."""
     settings.SHADER_STYLE = config.shader_style

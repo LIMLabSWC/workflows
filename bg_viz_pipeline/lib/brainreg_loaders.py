@@ -7,6 +7,8 @@ from brainrender import Scene
 from brainrender.actors import Points
 
 from bg_viz_pipeline.lib.styles import (
+    CELLS_COLOR,
+    CELLS_RADIUS,
     CUSTOM_REGION_ALPHA,
     CUSTOM_REGION_COLOR,
     PROBE_COLOR,
@@ -83,4 +85,4 @@ def add_brainreg_overlays(
             step = total_cells / config.max_points
             idx = (np.arange(config.max_points) * step).astype(int)
             cells = cells[idx]
-        scene.add(Points(cells, radius=45, colors="palegoldenrod"))
+        scene.add(Points(cells, radius=CELLS_RADIUS, colors=CELLS_COLOR))

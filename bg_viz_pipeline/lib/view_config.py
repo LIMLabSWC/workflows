@@ -1,9 +1,9 @@
 """
 Unified view settings for interactive and batch atlas rendering.
 
-``ViewConfig`` is the single model behind ``render_atlas.py`` (module constants)
-and ``viewer_presets.json`` (via ``from_preset_dict``). Field names in presets
-use the same UPPER_SNAKE keys as the interactive config block.
+``ViewConfig`` is the single model behind ``interactive_render.py`` (module
+constants) and ``viewer_presets.json`` (via ``from_preset_dict``). Field names
+in presets use the same UPPER_SNAKE keys as the interactive config block.
 """
 
 from __future__ import annotations
@@ -11,15 +11,17 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Literal, Mapping
 
-from bg_viz_pipeline.lib.camera_helpers import create_camera
+from bg_viz_pipeline.lib.camera_helpers import create_camera, DEFAULT_BATCH_BASE_FRONTAL_AZIMUTH_DEG
 from bg_viz_pipeline.lib.pose_helpers import SubjectPose
+from bg_viz_pipeline.lib.styles import (
+    BATCH_REGION_ALPHA,
+    BATCH_ROOT_ALPHA,
+    BATCH_SHADER_STYLE,
+)
 
 MeshMode = Literal["root", "regions"]
 RegionMode = Literal["leaves", "all"]
 ShaderStyle = Literal["cartoon", "plastic"]
-
-# Preserved batch default: existing presets assumed frontal azimuth 180°.
-DEFAULT_BATCH_BASE_FRONTAL_AZIMUTH_DEG = 180.0
 
 
 def _as_tuple3(value: Any) -> tuple[float, float, float]:
@@ -86,8 +88,8 @@ class ViewConfig:
         *,
         atlas_name: str,
         default_base_frontal_azimuth_deg: float = DEFAULT_BATCH_BASE_FRONTAL_AZIMUTH_DEG,
-        default_region_alpha: float = 0.2,
-        default_shader_style: ShaderStyle = "plastic",
+        default_region_alpha: float = BATCH_REGION_ALPHA,
+        default_shader_style: ShaderStyle = BATCH_SHADER_STYLE,
     ) -> ViewConfig:
         """
         Parse a ``viewer_presets.json`` entry.
@@ -115,7 +117,7 @@ class ViewConfig:
             regions_to_show=list(preset["REGIONS_TO_SHOW"]),
             region_mode=preset.get("REGION_MODE", "leaves"),
             show_root=bool(preset.get("SHOW_ROOT", True)),
-            root_alpha=float(preset.get("ROOT_ALPHA", 0.2)),
+            root_alpha=float(preset.get("ROOT_ALPHA", BATCH_ROOT_ALPHA)),
             region_alpha=float(preset.get("REGION_ALPHA", default_region_alpha)),
             subject_pose=preset.get("SUBJECT_POSE", "on_base"),
             camera_distance_factor=float(preset["CAMERA_DISTANCE_FACTOR"]),

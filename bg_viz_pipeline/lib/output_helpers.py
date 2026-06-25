@@ -32,3 +32,29 @@ def batch_png_title_parts(subject_id: str, config: ViewConfig) -> list[str]:
 def batch_png_filename(subject_id: str, config: ViewConfig) -> str:
     """Encoded PNG filename for a batch render."""
     return sanitize_filename("_".join(batch_png_title_parts(subject_id, config))) + ".png"
+
+
+def maybe_save_atlas_screenshots(scene, config: ViewConfig) -> None:
+    """
+    Save an atlas screenshot on window close when ``CUSTOM_PLANE_NORMAL`` is a
+    recognised cardinal direction.
+    """
+    n = config.custom_plane_normal
+    frontal = n == (1.0, 0.0, 0.0) or n == (-1.0, 0.0, 0.0)
+    sagittal = n == (0.0, 0.0, -1.0) or n == (0.0, 0.0, 1.0)
+    horizontal = n == (0.0, 1.0, 0.0) or n == (0.0, -1.0, 0.0)
+    if frontal:
+        scene.screenshot(
+            name=f"atlas_screenshot_{config.slice_mode}_frontal.png",
+            scale=2,
+        )
+    elif sagittal:
+        scene.screenshot(
+            name=f"atlas_screenshot_{config.slice_mode}_sagittal.png",
+            scale=2,
+        )
+    elif horizontal:
+        scene.screenshot(
+            name=f"atlas_screenshot_{config.slice_mode}_horizontal.png",
+            scale=2,
+        )

@@ -9,8 +9,8 @@ Requires a BrainGlobe conda env (e.g. `brainglobe-env`).
 
 | Script | Input | Output | Use when |
 |--------|-------|--------|----------|
-| [`render_atlas.py`](render_atlas.py) | Config block at top of file | Interactive window (+ optional PNG) | Tuning slice, camera, pose on the atlas alone |
-| [`brainreg_viewer.py`](brainreg_viewer.py) | [`presets/viewer_presets.json`](../presets/viewer_presets.json) | One PNG per preset | Batch figures with probes + regions for real subjects |
+| [`interactive_render.py`](interactive_render.py) | Config block at top of file | Interactive window (+ optional PNG) | Tuning slice, camera, pose on the atlas alone |
+| [`batch_render.py`](batch_render.py) | [`presets/viewer_presets.json`](../presets/viewer_presets.json) | One PNG per preset | Batch figures with probes + regions for real subjects |
 | [`probes_to_html.py`](probes_to_html.py) | CLI args | Interactive HTML | Shareable 3D probe view in a browser |
 | [`list_regions.py`](list_regions.py) | Config block at top of file | SVG in repo root | Per-probe region × shank summary tables |
 
@@ -18,13 +18,15 @@ Preset field reference: [`presets/README.md`](../presets/README.md).
 
 ---
 
-## `render_atlas` — interactive atlas explorer
+## `interactive_render` — interactive atlas explorer
 
-Edit the configuration block at the top of [`render_atlas.py`](render_atlas.py), then:
+Edit the configuration block at the top of [`interactive_render.py`](interactive_render.py), then:
 
 ```bash
-python -m bg_viz_pipeline.scripts.render_atlas
+python -m bg_viz_pipeline.scripts.interactive_render
 ```
+
+(`render_atlas.py` is a deprecated alias for the same entrypoint.)
 
 ### Three independent controls
 
@@ -70,7 +72,7 @@ the dorsal/top edge of the volume, so most of the brain lies at positive y.
 `CAMERA_ELEVATION_DEG` moves the eye along that y axis. Tune by eye — do not
 assume it matches intuitive above/below.
 
-To see the axis numbers yourself, set `PLOTTER_AXES = 8` in `render_atlas.py`
+To see the axis numbers yourself, set `PLOTTER_AXES = 8` in `interactive_render.py`
 (vedo cube axes on the bounding box).
 
 Same camera settings, different pose — axes stay fixed in atlas space; only the
@@ -123,23 +125,25 @@ With `SLICE_MODE == "custom"`, recognised normals write `atlas_screenshot_<mode>
 
 ---
 
-## `brainreg_viewer` — batch PNG export
+## `batch_render` — batch PNG export
 
 Renders registered subjects with atlas regions, probe tracks, optional custom `.obj` regions, and brainmapper cells. Settings come from JSON presets.
 
 1. Edit [`presets/viewer_presets.json`](../presets/viewer_presets.json) (see [`presets/README.md`](../presets/README.md)).
-2. Set `BASE_DIR` in [`brainreg_viewer.py`](brainreg_viewer.py) to your data root if needed.
+2. Set `BASE_DIR` in [`batch_render.py`](batch_render.py) to your data root if needed.
 3. Run:
 
 ```bash
-python -m bg_viz_pipeline.scripts.brainreg_viewer
-python -m bg_viz_pipeline.scripts.brainreg_viewer --only-subject ROI-1
-python -m bg_viz_pipeline.scripts.brainreg_viewer --only-subdir ds_MPX-R-0033
+python -m bg_viz_pipeline.scripts.batch_render
+python -m bg_viz_pipeline.scripts.batch_render --only-subject ROI-1
+python -m bg_viz_pipeline.scripts.batch_render --only-subdir ds_MPX-R-0033
 ```
+
+(`brainreg_viewer.py` is a deprecated alias for the same entrypoint.)
 
 Output PNGs are written to the current directory. Filenames encode subject, camera, and slice settings (e.g. `sub-MPX-R-0033_dist-4.00_rot--45.0_el--15.0.png`).
 
-**Note:** Batch presets default to `BASE_FRONTAL_AZIMUTH_DEG = 180` when omitted (preserves existing figures). Interactive `render_atlas` uses `0` by default — set the same value in both places when copying camera settings.
+**Note:** Batch presets default to `BASE_FRONTAL_AZIMUTH_DEG = 180` when omitted (preserves existing figures). Interactive `interactive_render` uses `0` by default — set the same value in both places when copying camera settings.
 
 Both scripts use the same [`scene_pipeline`](../lib/scene_pipeline.py): `apply_view` runs pose → camera (union bounds) → slice. Batch presets default `CLOSE_ACTORS` to `false` so existing figures stay open-cut; set `true` + `SLICE_CAP_COLOR` to match interactive capped slices.
 
@@ -209,15 +213,15 @@ See the module docstring in [`probes_to_html.py`](probes_to_html.py) for full op
 
 | Module | Role |
 |--------|------|
-| [`lib/scene_pipeline.py`](../lib/scene_pipeline.py) | Shared create / content / apply_view / render |
+| [`lib/scene_pipeline.py`](../lib/scene_pipeline.py) | Shared init / create / content / apply_view / render |
 | [`lib/brainreg_loaders.py`](../lib/brainreg_loaders.py) | Probes, cells, custom OBJ overlays |
-| [`lib/output_helpers.py`](../lib/output_helpers.py) | Batch PNG filename encoding |
+| [`lib/output_helpers.py`](../lib/output_helpers.py) | Batch PNG filename encoding; interactive exit screenshots |
 | [`lib/view_config.py`](../lib/view_config.py) | Shared `ViewConfig` for interactive + preset JSON |
 | [`lib/bounds_helpers.py`](../lib/bounds_helpers.py) | Scene bounding box and centre |
 | [`lib/mesh_helpers.py`](../lib/mesh_helpers.py) | Atlas root/regions geometry |
 | [`lib/slice_helpers.py`](../lib/slice_helpers.py) | Slice planes, posed normals, cap colouring |
 | [`lib/camera_helpers.py`](../lib/camera_helpers.py) | Spherical camera from bounds + azimuth/elevation |
 | [`lib/pose_helpers.py`](../lib/pose_helpers.py) | Rigid mesh rotation and slice-normal rotation |
-| [`lib/styles.py`](../lib/styles.py) | Shared colours/alpha for `brainreg_viewer` |
+| [`lib/styles.py`](../lib/styles.py) | Shared colours, alphas, atlas name, shader defaults |
 
 You do not need these for day-to-day tuning — only when changing how the helpers work or fixing a flipped pose.

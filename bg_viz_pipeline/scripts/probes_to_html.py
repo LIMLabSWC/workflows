@@ -44,7 +44,10 @@ import numpy as np
 
 from brainrender import Scene
 from brainrender.actors import Points
-from bg_viz_pipeline.lib.camera_helpers import create_camera
+from bg_viz_pipeline.lib.camera_helpers import (
+    DEFAULT_BATCH_BASE_FRONTAL_AZIMUTH_DEG,
+    create_camera,
+)
 from bg_viz_pipeline.lib.styles import (
     REGION_ALPHA,
     CUSTOM_REGION_COLOR,
@@ -260,13 +263,12 @@ for i, tf in enumerate(track_files, start=1):
     )
 
 # ----------------------------
-# Camera (atlas-aware, similar to brainreg_viewer)
+# Camera (atlas-aware, same baseline as batch_render)
 # ----------------------------
 if hasattr(scene, "root") and scene.root is not None:
     xmin, xmax, ymin, ymax, zmin, zmax = scene.root.bounds()
 
     # Frontal-like baseline; distance/angles chosen for a general overview.
-    _BASE_FRONTAL_AZIMUTH_DEG = 180.0
     _DIST_FACTOR = 2.0
     _ROT_DEG = 0.0
     _EL_DEG = -20.0
@@ -274,7 +276,7 @@ if hasattr(scene, "root") and scene.root is not None:
     cam = create_camera(
         (xmin, xmax, ymin, ymax, zmin, zmax),
         distance_factor=_DIST_FACTOR,
-        base_frontal_azimuth_deg=_BASE_FRONTAL_AZIMUTH_DEG,
+        base_frontal_azimuth_deg=DEFAULT_BATCH_BASE_FRONTAL_AZIMUTH_DEG,
         rotation_deg=_ROT_DEG,
         elevation_deg=_EL_DEG,
     )

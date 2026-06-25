@@ -2,6 +2,9 @@ from __future__ import annotations
 
 from typing import Dict, Tuple
 
+# Batch presets and probes_to_html assume this frontal azimuth when omitted.
+DEFAULT_BATCH_BASE_FRONTAL_AZIMUTH_DEG = 180.0
+
 
 def _center_and_extent(
     bounds: Tuple[float, float, float, float, float, float],

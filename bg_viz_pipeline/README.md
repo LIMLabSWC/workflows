@@ -48,9 +48,9 @@ Preset JSON reference: [`presets/README.md`](presets/README.md)
 
 1. **Interactive atlas explorer** (slice / camera / pose experiments):
    ```bash
-   python -m bg_viz_pipeline.scripts.render_atlas
+   python -m bg_viz_pipeline.scripts.interactive_render
    ```
-   Edit the config block at the top of `scripts/render_atlas.py`.
+   Edit the config block at the top of `scripts/interactive_render.py`.
 
 2. **Probe HTML:**
    ```bash
@@ -66,9 +66,9 @@ Preset JSON reference: [`presets/README.md`](presets/README.md)
 
 4. **Batch atlas + probe PNGs** — edit `presets/viewer_presets.json`, then:
    ```bash
-   python -m bg_viz_pipeline.scripts.brainreg_viewer              # all presets
-   python -m bg_viz_pipeline.scripts.brainreg_viewer --only-subject ROI-1
-   python -m bg_viz_pipeline.scripts.brainreg_viewer --only-subdir ds_MPX-R-0033_...
+   python -m bg_viz_pipeline.scripts.batch_render              # all presets
+   python -m bg_viz_pipeline.scripts.batch_render --only-subject ROI-1
+   python -m bg_viz_pipeline.scripts.batch_render --only-subdir ds_MPX-R-0033_...
    ```
 
 Use a conda environment with BrainGlobe installed

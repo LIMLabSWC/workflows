@@ -1,11 +1,11 @@
 # Viewer presets (`viewer_presets.json`)
 
-JSON array consumed by [`brainreg_viewer.py`](../scripts/brainreg_viewer.py). Each object is parsed into a [`ViewConfig`](../lib/view_config.py) (same field names as the `render_atlas.py` config block).
+JSON array consumed by [`batch_render.py`](../scripts/batch_render.py). Each object is parsed into a [`ViewConfig`](../lib/view_config.py) (same field names as the `interactive_render.py` config block).
 
 Edit the file, then from the repo root:
 
 ```bash
-python -m bg_viz_pipeline.scripts.brainreg_viewer
+python -m bg_viz_pipeline.scripts.batch_render
 ```
 
 Script usage and workflow: [`scripts/README.md`](../scripts/README.md).
@@ -16,7 +16,7 @@ Script usage and workflow: [`scripts/README.md`](../scripts/README.md).
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `BRAINREG_SUBDIR` | string | Folder name under `BASE_DIR` in `brainreg_viewer.py` (e.g. `ds_MPX-R-0033_250606_...`) |
+| `BRAINREG_SUBDIR` | string | Folder name under `BASE_DIR` in `batch_render.py` (e.g. `ds_MPX-R-0033_250606_...`) |
 | `REGIONS_TO_SHOW` | list of strings | Atlas region acronyms to highlight (e.g. `["M2", "cc-ec-cing-dwm"]`) |
 | `CAMERA_DISTANCE_FACTOR` | number | Zoom; distance = factor × max brain extent |
 | `CAMERA_ROTATION_DEG` | number | Orbit left/right around the brain |
@@ -43,7 +43,7 @@ Script usage and workflow: [`scripts/README.md`](../scripts/README.md).
 | `REGION_MODE` | string | `"leaves"` | `"leaves"` or `"all"` when using region meshes |
 | `PLOTTER_AXES` | int | `0` | vedo axes mode (`8` = labelled x/y/z) |
 | `SHADER_STYLE` | string | `"plastic"` | `"cartoon"` or `"plastic"` |
-| `ATLAS_NAME` | string | from `brainreg_viewer.py` | Override atlas if needed |
+| `ATLAS_NAME` | string | from `batch_render.py` | Override atlas if needed |
 
 ---
 
@@ -57,7 +57,7 @@ Script usage and workflow: [`scripts/README.md`](../scripts/README.md).
 | `"sagittal"` | Atlas sagittal plane (+z) |
 | `"custom"` | Uses `CUSTOM_PLANE_NORMAL` and `PLANE_DEPTH` |
 
-For `custom`, `PLANE_DEPTH` interpolates between the bounding-box extremes along the chosen normal (same idea as `render_atlas`).
+For `custom`, `PLANE_DEPTH` interpolates between the bounding-box extremes along the chosen normal (same idea as `interactive_render`).
 
 Common custom normals (this atlas):
 
@@ -135,4 +135,4 @@ Use this to match a figure back to the preset that produced it.
 
 - Duplicate a preset object to try a small change (e.g. `PLANE_DEPTH` or `CAMERA_ROTATION_DEG`).
 - Use `--only-subject` or `--only-subdir` to render a subset while iterating.
-- When copying camera settings from `render_atlas`, include `BASE_FRONTAL_AZIMUTH_DEG` if you use a non-default value there.
+- When copying camera settings from `interactive_render`, include `BASE_FRONTAL_AZIMUTH_DEG` if you use a non-default value there.
