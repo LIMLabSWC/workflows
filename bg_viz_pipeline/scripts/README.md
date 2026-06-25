@@ -205,6 +205,9 @@ See the module docstring in [`probes_to_html.py`](probes_to_html.py) for full op
 
 | Module | Role |
 |--------|------|
+| [`lib/bounds_helpers.py`](../lib/bounds_helpers.py) | Scene bounding box and centre |
+| [`lib/mesh_helpers.py`](../lib/mesh_helpers.py) | Atlas root/regions geometry |
+| [`lib/slice_helpers.py`](../lib/slice_helpers.py) | Slice planes, posed normals, cap colouring |
 | [`lib/camera_helpers.py`](../lib/camera_helpers.py) | Spherical camera from bounds + azimuth/elevation |
 | [`lib/pose_helpers.py`](../lib/pose_helpers.py) | Rigid mesh rotation and slice-normal rotation |
 | [`lib/styles.py`](../lib/styles.py) | Shared colours/alpha for `brainreg_viewer` |

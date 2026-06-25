@@ -12,17 +12,18 @@ Run::
 
 Pipeline (``main``)::
 
-    _add_meshes → apply_subject_pose → _make_camera → _apply_slice → render
+    add_atlas_geometry → apply_subject_pose → camera → apply_slice → render
 """
 
 from __future__ import annotations
 
-import numpy as np
 from brainrender import Scene, settings
-from vedo import colors as vedo_colors
 
+from bg_viz_pipeline.lib.bounds_helpers import bounds_center, union_bounds
 from bg_viz_pipeline.lib.camera_helpers import create_camera
-from bg_viz_pipeline.lib.pose_helpers import SubjectPose, apply_subject_pose, rotate_vector
+from bg_viz_pipeline.lib.mesh_helpers import add_atlas_geometry
+from bg_viz_pipeline.lib.pose_helpers import SubjectPose, apply_subject_pose
+from bg_viz_pipeline.lib.slice_helpers import apply_slice
 
 # =============================================================================
 # Configuration — edit these values
@@ -48,15 +49,15 @@ CAMERA_ROTATION_DEG = -45.0
 CAMERA_ELEVATION_DEG = -30.0  # along atlas y, not room up/down — see scripts/README.md
 _BASE_FRONTAL_AZIMUTH_DEG = 0.0
 
-SUBJECT_POSE: SubjectPose = "on_bulb"
+SUBJECT_POSE: SubjectPose = "on_base"
 
 SLICE_MODE = "custom"  # "none", "frontal", "horizontal", "sagittal", "custom"
-PLANE_DEPTH = 0.27
-CUSTOM_PLANE_NORMAL = (-1.0, 0.0, 0.0)
+PLANE_DEPTH = 0.35
+CUSTOM_PLANE_NORMAL = (0.0, 1.0, 0.0)
 CLOSE_ACTORS = True  # False = open cut (slice outline); True = solid cut face
 SLICE_CAP_COLOR = "salmon"  # cut-face colour when CLOSE_ACTORS is True; None = same as mesh
 
-PLOTTER_AXES = 0  # 8 = labelled x/y/z; see scripts/README.md § Atlas coordinates
+PLOTTER_AXES = 9  # 8 = labelled x/y/z; see scripts/README.md § Atlas coordinates
 
 # =============================================================================
 # brainrender / vedo defaults (usually leave as-is)
@@ -75,216 +76,9 @@ except Exception:
     pass
 
 
-_REGION_BATCH_SIZE = 256
-
-
-def _bounds_center(
-    bounds: tuple[float, float, float, float, float, float],
-) -> tuple[float, float, float]:
-    """Centre of a vtk-style bounding box; used as the pose rotation pivot."""
-    xmin, xmax, ymin, ymax, zmin, zmax = bounds
-    return (0.5 * (xmin + xmax), 0.5 * (ymin + ymax), 0.5 * (zmin + zmax))
-
-
-def _atlas_plane_normal(scene: Scene, slice_mode: str) -> tuple[float, float, float]:
-    """Look up a named BrainGlobe slice plane (frontal / horizontal / sagittal)."""
-    normals = scene.atlas.space.plane_normals
-    if slice_mode not in normals:
-        raise ValueError(
-            f"SLICE_MODE must be 'custom' or one of {sorted(normals)}, not {slice_mode!r}"
-        )
-    return tuple(normals[slice_mode])
-
-
-def _posed_slice_normal(
-    scene: Scene,
-    pose: SubjectPose,
-    slice_mode: str,
-    custom_plane_normal: tuple[float, float, float],
-) -> tuple[float, float, float]:
-    """Slice normal in atlas space, rotated to match the current specimen pose."""
-    if slice_mode == "custom":
-        base = custom_plane_normal
-    else:
-        base = _atlas_plane_normal(scene, slice_mode)
-    return rotate_vector(base, pose)
-
-
-def _all_region_acronyms(scene: Scene) -> list[str]:
-    """Return every atlas region acronym except ``root``."""
-    acr = scene.atlas.lookup_df["acronym"].astype(str).tolist()
-    return [a for a in acr if a != "root"]
-
-
-def _leaf_region_acronyms(scene: Scene) -> list[str]:
-    """Smallest atlas regions: terminal nodes in the hierarchy (tree ``.leaves()``)."""
-    atlas = scene.atlas
-    out: list[str] = []
-    for node in atlas.structures.tree.leaves():
-        sid = node.identifier
-        try:
-            acr = atlas.structures[sid]["acronym"]
-        except KeyError:
-            continue
-        if acr == "root":
-            continue
-        out.append(acr)
-    return out
-
-
-def _region_acronyms(scene: Scene, mode: str) -> list[str]:
-    """Pick the region list for ``REGION_MODE`` (``leaves`` or ``all``)."""
-    if mode == "all":
-        return _all_region_acronyms(scene)
-    if mode == "leaves":
-        return _leaf_region_acronyms(scene)
-    raise ValueError(f"REGION_MODE must be 'leaves' or 'all', not {mode!r}")
-
-
-def _add_meshes(scene: Scene) -> None:
-    """
-    Add atlas geometry according to ``MESH_MODE``.
-
-    ``root`` — keep the whole-brain shell (``scene.root``).
-    ``regions`` — add atlas regions in batches; root mesh is hidden.
-    """
-    if MESH_MODE == "root":
-        scene.root.alpha(ROOT_ALPHA)
-        return
-
-    if MESH_MODE == "regions":
-        regions = _region_acronyms(scene, REGION_MODE)
-        for i in range(0, len(regions), _REGION_BATCH_SIZE):
-            batch = regions[i : i + _REGION_BATCH_SIZE]
-            scene.add_brain_region(*batch, alpha=REGION_ALPHA)
-        return
-
-    raise ValueError(f"MESH_MODE must be 'root' or 'regions', not {MESH_MODE!r}")
-
-
-def _union_bounds(
-    scene: Scene,
-) -> tuple[float, float, float, float, float, float] | None:
-    """Axis-aligned bounding box spanning all actors currently in the scene."""
-    xs: list[float] = []
-    ys: list[float] = []
-    zs: list[float] = []
-    for actor in scene.clean_actors:
-        mesh = getattr(actor, "_mesh", None) or actor.mesh
-        try:
-            b = mesh.bounds()
-        except Exception:
-            continue
-        if b is None or len(b) < 6:
-            continue
-        xmin, xmax, ymin, ymax, zmin, zmax = (float(b[i]) for i in range(6))
-        xs += (xmin, xmax)
-        ys += (ymin, ymax)
-        zs += (zmin, zmax)
-    if not xs:
-        return None
-    return (min(xs), max(xs), min(ys), max(ys), min(zs), max(zs))
-
-
-def _custom_plane(
-    scene: Scene,
-    plane_depth: float,
-    normal: tuple[float, float, float],
-):
-    """
-    Build a vedo plane for ``SLICE_MODE == "custom"``.
-
-    ``plane_depth`` is 0 at the mesh edge and 1 at the centre, along the
-    axis of ``normal``.
-    """
-    ub = _union_bounds(scene)
-    if ub is None:
-        return None
-
-    xmin, xmax, ymin, ymax, zmin, zmax = ub
-    xmid = 0.5 * (xmin + xmax)
-    ymid = 0.5 * (ymin + ymax)
-    zmid = 0.5 * (zmin + zmax)
-    nx, ny, nz = normal
-    ax, ay, az = abs(nx), abs(ny), abs(nz)
-
-    if ax >= ay and ax >= az:
-        start = xmin if nx >= 0 else xmax
-        cx = start + plane_depth * (xmid - start)
-        cy, cz = ymid, zmid
-    elif ay >= ax and ay >= az:
-        start = ymin if ny >= 0 else ymax
-        cx, cy, cz = xmid, start + plane_depth * (ymid - start), zmid
-    else:
-        start = zmin if nz >= 0 else zmax
-        cx, cy, cz = xmid, ymid, start + plane_depth * (zmid - start)
-
-    return scene.atlas.get_plane(pos=(cx, cy, cz), norm=normal)
-
-
-def _cap_mesh_with_color(mesh, cap_color: str) -> None:
-    """
-    Close an open cut mesh and colour only the new cap triangles.
-
-    Used when ``CLOSE_ACTORS`` and ``SLICE_CAP_COLOR`` are both set.
-    """
-    n_before = mesh.ncells
-    mesh.cap()
-    if n_before >= mesh.ncells:
-        return
-
-    cap_rgb = (np.array(vedo_colors.get_color(cap_color)) * 255).astype(np.uint8)
-    base_rgb = (np.array(vedo_colors.get_color(mesh.color())) * 255).astype(np.uint8)
-    cols = np.zeros((mesh.ncells, 4), dtype=np.uint8)
-    cols[:, :3] = base_rgb
-    cols[:, 3] = 255
-    cols[n_before:, :3] = cap_rgb
-    mesh.cellcolors = cols
-
-
-def _refresh_silhouette(scene: Scene, actor) -> None:
-    """Re-draw cartoon silhouette after a mesh has been modified in place."""
-    if actor.silhouette is not None:
-        scene.plotter.remove(actor.silhouette.mesh)
-        scene.plotter.add(actor.make_silhouette().mesh)
-
-
-def _apply_slice(
-    scene: Scene,
-    pose: SubjectPose,
-    slice_mode: str | None,
-    plane_depth: float,
-    custom_plane_normal: tuple[float, float, float],
-) -> None:
-    """
-    Cut scene actors with a plane in the posed coordinate frame.
-
-    When ``CLOSE_ACTORS`` is True and ``SLICE_CAP_COLOR`` is set, the cut
-    face is capped and coloured. Otherwise ``scene.slice`` is used as-is.
-    """
-    if slice_mode in (None, "none"):
-        return
-
-    normal = _posed_slice_normal(scene, pose, slice_mode, custom_plane_normal)
-    plane = _custom_plane(scene, plane_depth, normal)
-    if plane is None:
-        return
-
-    if CLOSE_ACTORS and SLICE_CAP_COLOR:
-        for actor in scene.clean_actors.copy():
-            actor._mesh = actor._mesh.cut_with_plane(
-                origin=plane.center,
-                normal=plane.normal,
-            )
-            _cap_mesh_with_color(actor._mesh, SLICE_CAP_COLOR)
-            _refresh_silhouette(scene, actor)
-    else:
-        scene.slice(plane=plane, actors=None, close_actors=CLOSE_ACTORS)
-
-
 def _make_camera(scene: Scene):
     """Return a brainrender camera dict from the scene's current bounds."""
-    ub = _union_bounds(scene)
+    ub = union_bounds(scene)
     if ub is None:
         return None
     return create_camera(
@@ -306,15 +100,29 @@ def main() -> None:
         check_latest=False,
     )
 
-    _add_meshes(scene)
+    add_atlas_geometry(
+        scene,
+        mesh_mode=MESH_MODE,
+        region_mode=REGION_MODE,
+        root_alpha=ROOT_ALPHA,
+        region_alpha=REGION_ALPHA,
+    )
 
     # Pose uses the centre *before* rotation so the brain spins in place.
-    ub = _union_bounds(scene)
+    ub = union_bounds(scene)
     if ub is not None:
-        apply_subject_pose(scene, SUBJECT_POSE, _bounds_center(ub))
+        apply_subject_pose(scene, SUBJECT_POSE, bounds_center(ub))
 
     camera = _make_camera(scene)
-    _apply_slice(scene, SUBJECT_POSE, SLICE_MODE, PLANE_DEPTH, CUSTOM_PLANE_NORMAL)
+    apply_slice(
+        scene,
+        SUBJECT_POSE,
+        SLICE_MODE,
+        PLANE_DEPTH,
+        CUSTOM_PLANE_NORMAL,
+        close_actors=CLOSE_ACTORS,
+        slice_cap_color=SLICE_CAP_COLOR,
+    )
     scene.plotter.axes = PLOTTER_AXES
 
     if camera is not None:
