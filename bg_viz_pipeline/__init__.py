@@ -3,4 +3,6 @@
 Run entrypoints via:
   python -m bg_viz_pipeline.scripts.interactive_render
   python -m bg_viz_pipeline.scripts.batch_render
+  python -m bg_viz_pipeline.scripts.probes_to_html ...
+  python -m bg_viz_pipeline.scripts.list_regions
 """

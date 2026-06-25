@@ -34,6 +34,7 @@ from __future__ import annotations
 import csv
 import re
 from collections import defaultdict
+from itertools import chain
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -41,7 +42,7 @@ import numpy as np
 from brainglobe_atlasapi import BrainGlobeAtlas
 from matplotlib.patches import Patch
 
-from itertools import chain
+from bg_viz_pipeline.lib.styles import DEFAULT_ATLAS_NAME
 
 # =============================================================================
 # Constants
@@ -58,7 +59,7 @@ _MISSING_COLOR = (0.85, 0.85, 0.85)  # grey: acronym not found in atlas lookup
 # Configuration — edit these values
 # =============================================================================
 
-ATLAS_NAME = "viktors_tweaked_warp_swc_female_rat_25um"
+ATLAS_NAME = DEFAULT_ATLAS_NAME
 BRAINREG_DIR = Path(
     "/media/viktor/DataDrive/use_cases/ds_ROI-1_230620_102737_25_25_ch02_chan_2_red_2x4shankNPX"
 )

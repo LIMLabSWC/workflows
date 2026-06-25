@@ -11,15 +11,18 @@ from the per‑probe CSV files (one CSV per probe/shank) using the
 overlaid from `.obj` files found in `segmentation/atlas_space/regions` (unless
 `--no-custom-regions` is passed).
 
-Usage:
-    python probes_to_html.py <atlas_name> <brainreg_dir> <output_html>
+Usage::
+
+    python -m bg_viz_pipeline.scripts.probes_to_html \\
+        <atlas_name> <brainreg_dir> <output.html> \\
         [--regions R1 R2 ...] [--no-custom-regions]
 
-Example:
-    python probes_to_html.py \
-        swc_female_rat_50um \
-        /path/to/brainreg_output \
-        ROI_1_probes.html \
+Example::
+
+    python -m bg_viz_pipeline.scripts.probes_to_html \\
+        swc_female_rat_50um \\
+        /path/to/brainreg_output \\
+        ROI_1_probes.html \\
         --regions M2 VLO LO
 """
 
@@ -48,6 +51,7 @@ from bg_viz_pipeline.lib.camera_helpers import (
     DEFAULT_BATCH_BASE_FRONTAL_AZIMUTH_DEG,
     create_camera,
 )
+from bg_viz_pipeline.lib.scene_pipeline import init_brainrender_settings
 from bg_viz_pipeline.lib.styles import (
     BATCH_REGION_ALPHA,
     CUSTOM_REGION_COLOR,
@@ -55,6 +59,8 @@ from bg_viz_pipeline.lib.styles import (
     PROBE_COLOR,
     PROBE_RADIUS,
 )
+
+init_brainrender_settings()
 
 # ----------------------------
 # Argument parser
@@ -104,7 +110,11 @@ def find_custom_region_meshes(custom_regions_dir: Path) -> list[Path]:
     added to the scene elsewhere, e.g.:
 
         for obj_path in find_custom_region_meshes(...):
-            scene.add(str(obj_path), color="crimson", alpha=0.4)
+            scene.add(
+                str(obj_path),
+                color=CUSTOM_REGION_COLOR,
+                alpha=CUSTOM_REGION_ALPHA,
+            )
     """
     custom_regions_dir = Path(custom_regions_dir)
 
