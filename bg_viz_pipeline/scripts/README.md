@@ -172,7 +172,11 @@ Output PNGs are written to the current directory. Filenames encode subject, came
 
 **Note:** Batch presets default to `BASE_FRONTAL_AZIMUTH_DEG = 180` when omitted. Interactive `SETTINGS` uses `base_frontal_azimuth_deg: 0.0` — set the same value in both when copying camera settings.
 
-Both scripts use [`lib/render.py`](../lib/render.py): `apply_view` runs pose → camera → slice. Batch presets default `CLOSE_ACTORS` to `false` (`close_actors` in the settings dict); set `true` + `SLICE_CAP_COLOR` to match interactive capped slices.
+Both scripts use [`lib/render.py`](../lib/render.py): `apply_view` runs pose → camera → slice
+and sets `plotter_axes` from the preset / ``SETTINGS`` dict (batch default `9`, same as the
+old `brainreg_viewer`; set `PLOTTER_AXES: 0` to hide). Batch presets default `CLOSE_ACTORS`
+to `false` (`close_actors` in the settings dict); set `true` + `SLICE_CAP_COLOR` to match
+interactive capped slices.
 
 ### Expected subject layout
 

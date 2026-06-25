@@ -94,7 +94,7 @@ def settings_from_preset(preset, atlas_name=DEFAULT_ATLAS_NAME):
         "custom_plane_normal": normal,
         "close_actors": close_actors,
         "slice_cap_color": slice_cap_color,
-        "plotter_axes": int(preset.get("PLOTTER_AXES", 0)),
+        "plotter_axes": int(preset.get("PLOTTER_AXES", 9)),
         "shader_style": preset.get("SHADER_STYLE", BATCH_SHADER_STYLE),
         "brainreg_subdir": str(preset["BRAINREG_SUBDIR"]),
         "max_points": int(preset.get("MAX_POINTS", 5000)),
@@ -351,7 +351,12 @@ def configure_brainrender(config):
 
 
 def create_scene(config, title, offscreen=False):
-    root = config.get("regions_to_show") is None and config.get("mesh_mode") == "root"
+    regions = config.get("regions_to_show")
+    if regions is not None:
+        # Batch path: always load root mesh; SHOW_ROOT toggles visibility in add_atlas_content.
+        root = True
+    else:
+        root = config.get("mesh_mode") == "root"
     scene = Scene(atlas_name=config["atlas_name"], title=title, root=root, check_latest=False)
     if offscreen:
         scene.plotter.window.SetOffScreenRendering(True)

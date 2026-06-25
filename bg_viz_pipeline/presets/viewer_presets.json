@@ -52,7 +52,7 @@
     "SLICE_MODE": "custom",
     "PLANE_DEPTH": 0.4,
     "CUSTOM_PLANE_NORMAL": [0.0, 0.0, -1.0],
-    "SHOW_ROOT": false
+    "SHOW_ROOT": true
   },
   {
     "BRAINREG_SUBDIR": "ds_ROI-1_230620_102737_25_25_ch02_chan_2_red_2x4shankNPX",
@@ -63,7 +63,7 @@
     "SLICE_MODE": "custom",
     "PLANE_DEPTH": 0.9,
     "CUSTOM_PLANE_NORMAL": [0.0, 0.0, -1.0],
-    "SHOW_ROOT": false
+    "SHOW_ROOT": true
   },
   {
     "BRAINREG_SUBDIR": "ds_ROI-1_230620_102737_25_25_ch02_chan_2_red_2x4shankNPX",
@@ -74,7 +74,7 @@
     "SLICE_MODE": "custom",
     "PLANE_DEPTH": 1.0,
     "CUSTOM_PLANE_NORMAL": [0.0, 0.0, 1.0],
-    "SHOW_ROOT": false
+    "SHOW_ROOT": true
   },
 
   {
