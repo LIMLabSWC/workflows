@@ -13,6 +13,7 @@ Requires a BrainGlobe conda env (e.g. `brainglobe-env`).
 | [`batch_render.py`](batch_render.py) | [`presets/viewer_presets.json`](../presets/viewer_presets.json) | One PNG per preset | Batch figures with probes + regions for real subjects |
 | [`probes_to_html.py`](probes_to_html.py) | CLI args | Interactive HTML | Shareable 3D probe view in a browser |
 | [`list_regions.py`](list_regions.py) | Config block at top of file | SVG in repo root | Per-probe region × shank summary tables |
+| [`list_cell_counts.py`](list_cell_counts.py) | Config block at top of file | SVG in repo root | Bar chart of cellfinder cells per atlas region |
 
 Preset field reference: [`presets/README.md`](../presets/README.md).
 
@@ -162,7 +163,7 @@ regions as rows. Cells use the same **BrainGlobe structure colours**
 (`rgb_triplet`) as brainrender — not Napari’s default label colormap.
 
 Edit the config block at the top of [`list_regions.py`](list_regions.py)
-(`ATLAS_NAME`, `BRAINREG_DIR`), then:
+(`BRAINREG_DIR`, `CELL`), then:
 
 ```bash
 python -m bg_viz_pipeline.scripts.list_regions
@@ -186,8 +187,33 @@ follow `probe_<name>_shank_<n>` (e.g. `probe_PFC_shank_1.csv`).
 - **Layout:** square cells, vertical dividers between shanks, transparent SVG
   background with tight crop.
 
-Tune `CELL_SIZE` and `LEGEND_COLS` in the script config block if the default
-layout is too cramped.
+Tune `CELL` (inches per grid cell) at the top of the script if the layout is
+too cramped.
+
+---
+
+## `list_cell_counts` — cellfinder cells per region
+
+Horizontal bar chart of **total detected cells** per atlas region from a
+cellfinder ``analysis/summary.csv``. By default only the **top 15** regions by total cell count are drawn, with
+separate **left** and **right** hemisphere bars per region. Bar colours use
+BrainGlobe ``rgb_triplet`` (right bars are a darker variant).
+
+Edit the config block at the top of [`list_cell_counts.py`](list_cell_counts.py)
+(`SUMMARY_CSV`, `TOP_N`), then:
+
+```bash
+python -m bg_viz_pipeline.scripts.list_cell_counts
+```
+
+Writes ``cell_counts_<subject>.svg`` to the **workflows repo root**.
+
+### Input
+
+Cellfinder summary CSV with columns ``structure_name``, ``left_cell_count``,
+``right_cell_count``, and ``total_cells``. Structure names are matched to the
+atlas by full name (after stripping whitespace). Only the top ``TOP_N`` regions
+by ``total_cells`` are drawn (default ``15``), each with left and right bars.
 
 ---
 

@@ -57,14 +57,21 @@ Preset JSON reference: [`presets/README.md`](presets/README.md)
    python -m bg_viz_pipeline.scripts.probes_to_html <atlas> <brainreg_dir> <out.html> [--regions ...]
    ```
 
-3. **Probe region tables (SVG):** edit `ATLAS_NAME` and `BRAINREG_DIR` in
+3. **Probe region tables (SVG):** edit `BRAINREG_DIR` in
    `scripts/list_regions.py`, then:
    ```bash
    python -m bg_viz_pipeline.scripts.list_regions
    ```
    Output: `probe_regions_<subject>.svg` in the repo root.
 
-4. **Batch atlas + probe PNGs** — edit `presets/viewer_presets.json`, then:
+4. **Cellfinder cells per region (SVG):** edit `SUMMARY_CSV` in
+   `scripts/list_cell_counts.py`, then:
+   ```bash
+   python -m bg_viz_pipeline.scripts.list_cell_counts
+   ```
+   Output: `cell_counts_<subject>.svg` in the repo root.
+
+5. **Batch atlas + probe PNGs** — edit `presets/viewer_presets.json`, then:
    ```bash
    python -m bg_viz_pipeline.scripts.batch_render              # all presets
    python -m bg_viz_pipeline.scripts.batch_render --only-subject ROI-1
