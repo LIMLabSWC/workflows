@@ -6,6 +6,9 @@ Reads per-shank CSV files under ``segmentation/atlas_space/tracks``, builds one
 table per probe (shanks = columns, regions = rows), colours cells with BrainGlobe
 atlas colours, and saves an SVG to the workflows repo root.
 
+Also prints a terminal summary (regions per shank, then a copy-paste list for
+``REGIONS_TO_SHOW`` in presets).
+
 Run from repo root::
 
     python -m bg_viz_pipeline.scripts.list_regions

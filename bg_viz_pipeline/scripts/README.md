@@ -12,8 +12,8 @@ Requires a BrainGlobe conda env (e.g. `brainglobe-env`).
 | [`interactive_render.py`](interactive_render.py) | Config block at top of file | Interactive window (+ optional PNG) | Tuning slice, camera, pose on the atlas alone |
 | [`batch_render.py`](batch_render.py) | [`presets/viewer_presets.json`](../presets/viewer_presets.json) | One PNG per preset | Batch figures with probes + regions for real subjects |
 | [`probes_to_html.py`](probes_to_html.py) | CLI args | Interactive HTML | Shareable 3D probe view in a browser |
-| [`list_regions.py`](list_regions.py) | Config block at top of file | SVG in repo root | Per-probe region × shank summary tables |
-| [`list_cell_counts.py`](list_cell_counts.py) | Config block at top of file | SVG in repo root | Bar chart of cellfinder cells per atlas region |
+| [`list_regions.py`](list_regions.py) | `BRAINREG_DIR`, `CELL` at top of file | SVG + terminal region summary | Per-probe region × shank summary tables |
+| [`list_cell_counts.py`](list_cell_counts.py) | `SUMMARY_CSV`, `TOP_N` at top of file | SVG in repo root | Bar chart of cellfinder cells per atlas region |
 
 Preset field reference: [`presets/README.md`](../presets/README.md).
 
@@ -56,7 +56,7 @@ Settings below match the field names in [`viewer_presets.json`](../presets/viewe
 | `CUSTOM_PLANE_NORMAL` | `(x, y, z)` | Direction when `SLICE_MODE == "custom"` |
 | `CLOSE_ACTORS` | bool | `False` = open cut; `True` = solid cap |
 | `SLICE_CAP_COLOR` | colour name or `None` | Cap colour when `CLOSE_ACTORS` is True |
-| `PLOTTER_AXES` | int | vedo axes mode (`0` = off, `8` = labelled x/y/z) |
+| `PLOTTER_AXES` | int | vedo axes mode (`0` = off; `8` or `9` = labelled cube axes; default `9` in script) |
 | `SHADER_STYLE` | `"cartoon"` \| `"plastic"` | brainrender shader (`cartoon` in interactive by default) |
 
 BrainGlobe axis names for this atlas: frontal **+x**, horizontal **+y**, sagittal **+z**.
@@ -71,7 +71,7 @@ the dorsal/top edge of the volume, so most of the brain lies at positive y.
 `CAMERA_ELEVATION_DEG` moves the eye along that y axis. Tune by eye — do not
 assume it matches intuitive above/below.
 
-To see the axis numbers yourself, set `PLOTTER_AXES = 8` in `interactive_render.py`
+To see the axis numbers yourself, set `PLOTTER_AXES = 8` or `9` in `interactive_render.py`
 (vedo cube axes on the bounding box).
 
 Same camera settings, different pose — axes stay fixed in atlas space; only the
@@ -162,8 +162,7 @@ Builds a flat summary figure: one table per probe, shanks as columns, brain
 regions as rows. Cells use the same **BrainGlobe structure colours**
 (`rgb_triplet`) as brainrender — not Napari’s default label colormap.
 
-Edit the config block at the top of [`list_regions.py`](list_regions.py)
-(`BRAINREG_DIR`, `CELL`), then:
+Edit `BRAINREG_DIR` and `CELL` at the top of [`list_regions.py`](list_regions.py), then:
 
 ```bash
 python -m bg_viz_pipeline.scripts.list_regions
@@ -202,8 +201,7 @@ cellfinder ``analysis/summary.csv``. By default only the **top 15** regions by t
 separate **left** and **right** hemisphere bars per region. Bar colours use
 BrainGlobe ``rgb_triplet`` (right bars are a darker variant).
 
-Edit the config block at the top of [`list_cell_counts.py`](list_cell_counts.py)
-(`SUMMARY_CSV`, `TOP_N`), then:
+Edit `SUMMARY_CSV` and `TOP_N` at the top of [`list_cell_counts.py`](list_cell_counts.py), then:
 
 ```bash
 python -m bg_viz_pipeline.scripts.list_cell_counts
