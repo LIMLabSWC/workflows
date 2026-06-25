@@ -1,6 +1,6 @@
 # Viewer presets (`viewer_presets.json`)
 
-JSON array consumed by [`batch_render.py`](../scripts/batch_render.py). Each object is parsed into a [`ViewConfig`](../lib/view_config.py) (same field names as the `interactive_render.py` config block).
+JSON array consumed by [`batch_render.py`](../scripts/batch_render.py). Each object is converted to a settings dict by ``render.settings_from_preset()`` (same fields as the `SETTINGS` dict in `interactive_render.py`, but JSON keys are UPPER_SNAKE).
 
 Edit the file, then from the repo root:
 

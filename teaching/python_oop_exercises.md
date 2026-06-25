@@ -500,9 +500,9 @@ Open these files **after** Parts 1–10:
 
 | File | Look for |
 |------|----------|
-| `bg_viz_pipeline/lib/view_config.py` | `@dataclass(frozen=True)`, `from_preset_dict` |
-| `bg_viz_pipeline/scripts/interactive_render.py` | config constants → `ViewConfig(...)` |
-| `bg_viz_pipeline/lib/scene_pipeline.py` | functions that take `config: ViewConfig` |
+| `bg_viz_pipeline/lib/render.py` | constants, `settings_from_preset`, `apply_view` |
+| `bg_viz_pipeline/scripts/interactive_render.py` | `SETTINGS` dict at top |
+| `bg_viz_pipeline/scripts/batch_render.py` | reads JSON → `settings_from_preset` |
 
 ### Exercise 11.1 — Trace one value
 

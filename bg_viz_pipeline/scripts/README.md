@@ -21,7 +21,7 @@ Preset field reference: [`presets/README.md`](../presets/README.md).
 
 ## `interactive_render` — interactive atlas explorer
 
-Edit the configuration block at the top of [`interactive_render.py`](interactive_render.py), then:
+Edit the ``SETTINGS`` dict at the top of [`interactive_render.py`](interactive_render.py), then:
 
 ```bash
 python -m bg_viz_pipeline.scripts.interactive_render
@@ -40,7 +40,7 @@ Pose and camera are **intentionally separate**: changing pose moves the brain, n
 ### Configuration reference
 
 Settings below match the field names in [`viewer_presets.json`](../presets/viewer_presets.json)
-(parsed by [`lib/view_config.py`](../lib/view_config.py)).
+(JSON uses UPPER_SNAKE; interactive uses lower_snake in the ``SETTINGS`` dict).
 
 | Variable | Values / type | What it does |
 |----------|---------------|--------------|
@@ -116,7 +116,7 @@ SUBJECT_POSE = "on_bulb"
 # re-tune CAMERA_* as needed
 ```
 
-If a pose looks flipped, edit angles in [`lib/pose_helpers.py`](../lib/pose_helpers.py) (`POSE_ROTATIONS_DEG`).
+If a pose looks flipped, edit ``POSE_ROTATIONS_DEG`` in [`lib/render.py`](../lib/render.py).
 
 ### Screenshots
 
@@ -142,7 +142,7 @@ Output PNGs are written to the current directory. Filenames encode subject, came
 
 **Note:** Batch presets default to `BASE_FRONTAL_AZIMUTH_DEG = 180` when omitted (preserves existing figures). Interactive `interactive_render` uses `0` by default — set the same value in both places when copying camera settings.
 
-Both scripts use the same [`scene_pipeline`](../lib/scene_pipeline.py): `apply_view` runs pose → camera (union bounds) → slice. Batch presets default `CLOSE_ACTORS` to `false` so existing figures stay open-cut; set `true` + `SLICE_CAP_COLOR` to match interactive capped slices.
+Both scripts use [`lib/render.py`](../lib/render.py): `apply_view` runs pose → camera → slice. Batch presets default `CLOSE_ACTORS` to `false` so existing figures stay open-cut; set `true` + `SLICE_CAP_COLOR` to match interactive capped slices.
 
 ### Expected subject layout
 
@@ -233,17 +233,10 @@ See the module docstring in [`probes_to_html.py`](probes_to_html.py) for full op
 
 ## Advanced (library code)
 
+All 3D rendering shared by `interactive_render` and `batch_render` lives in one file:
+
 | Module | Role |
 |--------|------|
-| [`lib/scene_pipeline.py`](../lib/scene_pipeline.py) | Shared init / create / content / apply_view / render |
-| [`lib/brainreg_loaders.py`](../lib/brainreg_loaders.py) | Probes, cells, custom OBJ overlays |
-| [`lib/output_helpers.py`](../lib/output_helpers.py) | Batch PNG filename encoding; interactive exit screenshots |
-| [`lib/view_config.py`](../lib/view_config.py) | Shared `ViewConfig` for interactive + preset JSON |
-| [`lib/bounds_helpers.py`](../lib/bounds_helpers.py) | Scene bounding box and centre |
-| [`lib/mesh_helpers.py`](../lib/mesh_helpers.py) | Atlas root/regions geometry |
-| [`lib/slice_helpers.py`](../lib/slice_helpers.py) | Slice planes, posed normals, cap colouring |
-| [`lib/camera_helpers.py`](../lib/camera_helpers.py) | Spherical camera from bounds + azimuth/elevation |
-| [`lib/pose_helpers.py`](../lib/pose_helpers.py) | Rigid mesh rotation and slice-normal rotation |
-| [`lib/styles.py`](../lib/styles.py) | Shared colours, alphas, atlas name, shader defaults |
+| [`lib/render.py`](../lib/render.py) | Constants, settings dicts, camera, pose, slice, scene setup, batch overlays |
 
-You do not need these for day-to-day tuning — only when changing how the helpers work or fixing a flipped pose.
+Figure scripts (`list_regions`, `list_cell_counts`) are standalone — they only import `DEFAULT_ATLAS_NAME` from `render.py`.

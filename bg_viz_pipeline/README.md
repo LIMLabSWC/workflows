@@ -50,7 +50,7 @@ Preset JSON reference: [`presets/README.md`](presets/README.md)
    ```bash
    python -m bg_viz_pipeline.scripts.interactive_render
    ```
-   Edit the config block at the top of `scripts/interactive_render.py`.
+   Edit the ``SETTINGS`` dict at the top of `scripts/interactive_render.py`.
 
 2. **Probe HTML:**
    ```bash

@@ -47,17 +47,15 @@ import numpy as np
 
 from brainrender import Scene
 from brainrender.actors import Points
-from bg_viz_pipeline.lib.camera_helpers import (
-    DEFAULT_BATCH_BASE_FRONTAL_AZIMUTH_DEG,
-    create_camera,
-)
-from bg_viz_pipeline.lib.scene_pipeline import init_brainrender_settings
-from bg_viz_pipeline.lib.styles import (
+from bg_viz_pipeline.lib.render import (
     BATCH_REGION_ALPHA,
     CUSTOM_REGION_COLOR,
     CUSTOM_REGION_ALPHA,
+    DEFAULT_BATCH_BASE_FRONTAL_AZIMUTH_DEG,
     PROBE_COLOR,
     PROBE_RADIUS,
+    create_camera,
+    init_brainrender_settings,
 )
 
 init_brainrender_settings()

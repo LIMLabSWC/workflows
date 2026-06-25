@@ -1,2 +1,1 @@
-"""Shared brainreg modules."""
-
+"""Shared library code lives in render.py."""

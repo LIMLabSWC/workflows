@@ -17,7 +17,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from brainglobe_atlasapi import BrainGlobeAtlas
 
-from bg_viz_pipeline.lib.styles import DEFAULT_ATLAS_NAME
+from bg_viz_pipeline.lib.render import DEFAULT_ATLAS_NAME
 
 # =============================================================================
 # Configuration — edit these paths
