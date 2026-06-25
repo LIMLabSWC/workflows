@@ -30,7 +30,3 @@ PROBE_COLOR = "chartreuse"
 PROBE_RADIUS = 50
 CELLS_COLOR = "palegoldenrod"
 CELLS_RADIUS = 45
-
-# Backward-compatible aliases (batch region highlight alpha)
-REGION_ALPHA = BATCH_REGION_ALPHA
-ROOT_ALPHA = BATCH_ROOT_ALPHA

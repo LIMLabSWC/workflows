@@ -49,7 +49,7 @@ from bg_viz_pipeline.lib.camera_helpers import (
     create_camera,
 )
 from bg_viz_pipeline.lib.styles import (
-    REGION_ALPHA,
+    BATCH_REGION_ALPHA,
     CUSTOM_REGION_COLOR,
     CUSTOM_REGION_ALPHA,
     PROBE_COLOR,
@@ -228,7 +228,7 @@ else:
 print("=" * 80 + "\n")
 
 for reg in regions_to_show:
-    scene.add_brain_region(reg, alpha=REGION_ALPHA)
+    scene.add_brain_region(reg, alpha=BATCH_REGION_ALPHA)
 
 for obj_path in custom_region_files:
     scene.add(

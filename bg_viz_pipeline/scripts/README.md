@@ -26,8 +26,6 @@ Edit the configuration block at the top of [`interactive_render.py`](interactive
 python -m bg_viz_pipeline.scripts.interactive_render
 ```
 
-(`render_atlas.py` is a deprecated alias for the same entrypoint.)
-
 ### Three independent controls
 
 Think of three dials you tune separately:
@@ -138,8 +136,6 @@ python -m bg_viz_pipeline.scripts.batch_render
 python -m bg_viz_pipeline.scripts.batch_render --only-subject ROI-1
 python -m bg_viz_pipeline.scripts.batch_render --only-subdir ds_MPX-R-0033
 ```
-
-(`brainreg_viewer.py` is a deprecated alias for the same entrypoint.)
 
 Output PNGs are written to the current directory. Filenames encode subject, camera, and slice settings (e.g. `sub-MPX-R-0033_dist-4.00_rot--45.0_el--15.0.png`).
 
