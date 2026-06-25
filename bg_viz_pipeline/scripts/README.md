@@ -141,7 +141,7 @@ Output PNGs are written to the current directory. Filenames encode subject, came
 
 **Note:** Batch presets default to `BASE_FRONTAL_AZIMUTH_DEG = 180` when omitted (preserves existing figures). Interactive `render_atlas` uses `0` by default — set the same value in both places when copying camera settings.
 
-**Pose / slice cap:** `SUBJECT_POSE`, `CLOSE_ACTORS`, and `SLICE_CAP_COLOR` are parsed from presets but only applied by `render_atlas` until Phase 3 unifies the batch pipeline.
+Both scripts use the same [`scene_pipeline`](../lib/scene_pipeline.py): `apply_view` runs pose → camera (union bounds) → slice. Batch presets default `CLOSE_ACTORS` to `false` so existing figures stay open-cut; set `true` + `SLICE_CAP_COLOR` to match interactive capped slices.
 
 ### Expected subject layout
 
@@ -209,6 +209,9 @@ See the module docstring in [`probes_to_html.py`](probes_to_html.py) for full op
 
 | Module | Role |
 |--------|------|
+| [`lib/scene_pipeline.py`](../lib/scene_pipeline.py) | Shared create / content / apply_view / render |
+| [`lib/brainreg_loaders.py`](../lib/brainreg_loaders.py) | Probes, cells, custom OBJ overlays |
+| [`lib/output_helpers.py`](../lib/output_helpers.py) | Batch PNG filename encoding |
 | [`lib/view_config.py`](../lib/view_config.py) | Shared `ViewConfig` for interactive + preset JSON |
 | [`lib/bounds_helpers.py`](../lib/bounds_helpers.py) | Scene bounding box and centre |
 | [`lib/mesh_helpers.py`](../lib/mesh_helpers.py) | Atlas root/regions geometry |

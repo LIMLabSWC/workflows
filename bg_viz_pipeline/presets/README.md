@@ -36,10 +36,10 @@ Script usage and workflow: [`scripts/README.md`](../scripts/README.md).
 | `ROOT_ALPHA` | number | `0.2` | Root mesh opacity when `SHOW_ROOT` is true |
 | `REGION_ALPHA` | number | `0.2` | Highlighted atlas region opacity |
 | `MAX_POINTS` | int | `5000` | Cap on brainmapper cells plotted |
-| `SUBJECT_POSE` | string | `"on_base"` | `"on_base"`, `"on_bulb"`, or `"on_side"` (batch applies in Phase 3) |
-| `CLOSE_ACTORS` | bool | `true` | Open cut vs solid cap (batch applies in Phase 3) |
-| `SLICE_CAP_COLOR` | string or `null` | `"salmon"` | Cut-face colour when capped (batch applies in Phase 3) |
-| `MESH_MODE` | string | `"regions"` | `"root"` or `"regions"` (batch applies in Phase 3) |
+| `SUBJECT_POSE` | string | `"on_base"` | `"on_base"`, `"on_bulb"`, or `"on_side"` |
+| `CLOSE_ACTORS` | bool | `false` | Open cut vs solid cap (`true` + `SLICE_CAP_COLOR` for capped cut) |
+| `SLICE_CAP_COLOR` | string or `null` | none | Cut-face colour when `CLOSE_ACTORS` is true (defaults to `"salmon"` if capped) |
+| `MESH_MODE` | string | `"regions"` | `"root"` or `"regions"` (interactive-style atlas mesh) |
 | `REGION_MODE` | string | `"leaves"` | `"leaves"` or `"all"` when using region meshes |
 | `PLOTTER_AXES` | int | `0` | vedo axes mode (`8` = labelled x/y/z) |
 | `SHADER_STYLE` | string | `"plastic"` | `"cartoon"` or `"plastic"` |

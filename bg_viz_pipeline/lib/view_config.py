@@ -100,11 +100,14 @@ class ViewConfig:
         if "BRAINREG_SUBDIR" not in preset:
             raise KeyError("preset must include BRAINREG_SUBDIR")
 
-        cap = preset.get("SLICE_CAP_COLOR", "salmon")
-        if cap is None:
-            slice_cap_color = None
+        close_actors = bool(preset.get("CLOSE_ACTORS", False))
+        if "SLICE_CAP_COLOR" in preset:
+            cap = preset["SLICE_CAP_COLOR"]
+            slice_cap_color = None if cap is None else str(cap)
+        elif close_actors:
+            slice_cap_color = "salmon"
         else:
-            slice_cap_color = str(cap)
+            slice_cap_color = None
 
         return cls(
             atlas_name=str(preset.get("ATLAS_NAME", atlas_name)),
@@ -126,7 +129,7 @@ class ViewConfig:
             custom_plane_normal=_as_tuple3(
                 preset.get("CUSTOM_PLANE_NORMAL", (0.0, 0.0, 1.0))
             ),
-            close_actors=bool(preset.get("CLOSE_ACTORS", True)),
+            close_actors=close_actors,
             slice_cap_color=slice_cap_color,
             plotter_axes=int(preset.get("PLOTTER_AXES", 0)),
             shader_style=preset.get("SHADER_STYLE", default_shader_style),

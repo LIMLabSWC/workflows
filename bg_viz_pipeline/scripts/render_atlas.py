@@ -12,17 +12,21 @@ Run::
 
 Pipeline (``main``)::
 
-    add_atlas_geometry → apply_subject_pose → camera → apply_slice → render
+    create_scene → add_atlas_content → apply_view → render
 """
 
 from __future__ import annotations
 
-from brainrender import Scene, settings
+from brainrender import settings
 
-from bg_viz_pipeline.lib.bounds_helpers import bounds_center, union_bounds
-from bg_viz_pipeline.lib.mesh_helpers import add_atlas_geometry
-from bg_viz_pipeline.lib.pose_helpers import SubjectPose, apply_subject_pose
-from bg_viz_pipeline.lib.slice_helpers import apply_slice
+from bg_viz_pipeline.lib.pose_helpers import SubjectPose
+from bg_viz_pipeline.lib.scene_pipeline import (
+    add_atlas_content,
+    apply_view,
+    configure_brainrender,
+    create_scene,
+    render_scene,
+)
 from bg_viz_pipeline.lib.view_config import ViewConfig
 
 # =============================================================================
@@ -102,49 +106,12 @@ def _view_config() -> ViewConfig:
 def main() -> None:
     """Build the scene and open the interactive plotter."""
     config = _view_config()
-    settings.SHADER_STYLE = config.shader_style
+    configure_brainrender(config)
 
-    show_root = config.mesh_mode == "root"
-    scene = Scene(
-        atlas_name=config.atlas_name,
-        title=config.atlas_name,
-        root=show_root,
-        check_latest=False,
-    )
-
-    add_atlas_geometry(
-        scene,
-        mesh_mode=config.mesh_mode,
-        region_mode=config.region_mode,
-        root_alpha=config.root_alpha,
-        region_alpha=config.region_alpha,
-    )
-
-    # Pose uses the centre *before* rotation so the brain spins in place.
-    ub = union_bounds(scene)
-    if ub is not None:
-        apply_subject_pose(scene, config.subject_pose, bounds_center(ub))
-
-    camera = None
-    ub = union_bounds(scene)
-    if ub is not None:
-        camera = config.make_camera(ub)
-
-    apply_slice(
-        scene,
-        config.subject_pose,
-        config.slice_mode,
-        config.plane_depth,
-        config.custom_plane_normal,
-        close_actors=config.close_actors,
-        slice_cap_color=config.slice_cap_color,
-    )
-    scene.plotter.axes = config.plotter_axes
-
-    if camera is not None:
-        scene.render(camera=camera, interactive=True)
-    else:
-        scene.render(interactive=True)
+    scene = create_scene(config, title=config.atlas_name)
+    add_atlas_content(scene, config)
+    camera = apply_view(scene, config)
+    render_scene(scene, camera, interactive=True)
 
     # Screenshot only for these normals; filenames include SLICE_MODE.
     n = config.custom_plane_normal
