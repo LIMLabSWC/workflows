@@ -4,10 +4,42 @@ Unified view settings for interactive and batch atlas rendering.
 ``ViewConfig`` is the single model behind ``interactive_render.py`` (module
 constants) and ``viewer_presets.json`` (via ``from_preset_dict``). Field names
 in presets use the same UPPER_SNAKE keys as the interactive config block.
+
+Python concepts used in this file (plain language)
+--------------------------------------------------
+**Class** — a blueprint for grouping related data and behaviour. Here,
+``ViewConfig`` bundles all camera / slice / pose settings in one object instead
+of passing dozens of separate variables.
+
+**Dataclass** (``@dataclass``) — a shortcut that writes boring boilerplate for
+you: it creates ``__init__`` so you can write ``ViewConfig(atlas_name="...", ...)``
+and access fields as ``config.camera_rotation_deg``. Without it you'd write
+many lines of repetitive assignment code.
+
+**frozen=True** — after you build a ``ViewConfig``, you cannot change its fields
+(e.g. ``config.camera_rotation_deg = 5`` would raise an error). Settings are
+fixed for one render pass, which avoids accidental mutation mid-pipeline.
+
+**Type hints** (``str``, ``float``, ``bool``, ``list[str] | None``) — notes for
+humans and tools about what each value should be. They do not change runtime
+behaviour; ``x: float = 4.0`` still works like a normal variable with default 4.0.
+``list[str] | None`` means "either a list of strings, or None".
+
+**Literal** (``MeshMode = Literal["root", "regions"]``) — a type hint meaning
+"this string must be one of these exact options". Helps catch typos like
+``"regoin"`` early.
+
+**@classmethod** — a function tied to the class itself, not one instance.
+``ViewConfig.from_preset_dict(...)`` is a factory: read JSON → return a new
+``ViewConfig``. The first argument ``cls`` is the class (``ViewConfig``).
+
+**Mapping** — anything dict-like (``dict``, JSON object after ``json.load``).
+We use it because presets come from JSON, not necessarily a plain ``dict``.
 """
 
 from __future__ import annotations
 
+# ``dataclass`` is from the standard library — see module docstring above.
 from dataclasses import dataclass
 from typing import Any, Literal, Mapping
 
@@ -19,12 +51,19 @@ from bg_viz_pipeline.lib.styles import (
     BATCH_SHADER_STYLE,
 )
 
+# Allowed values for a few string settings (documentation + type checking).
 MeshMode = Literal["root", "regions"]
 RegionMode = Literal["leaves", "all"]
 ShaderStyle = Literal["cartoon", "plastic"]
 
 
 def _as_tuple3(value: Any) -> tuple[float, float, float]:
+    """
+    Convert JSON ``[x, y, z]`` (a list) into a Python ``(x, y, z)`` tuple.
+
+    Presets store normals as lists; our code prefers immutable tuples.
+    Leading underscore means "internal helper, not part of the public API".
+    """
     if isinstance(value, (list, tuple)) and len(value) == 3:
         return (float(value[0]), float(value[1]), float(value[2]))
     raise ValueError(f"Expected [x, y, z], got {value!r}")
@@ -32,13 +71,22 @@ def _as_tuple3(value: Any) -> tuple[float, float, float]:
 
 @dataclass(frozen=True)
 class ViewConfig:
-    """Camera, slice, pose, and scene-content settings shared by both renderers."""
+    """
+    Camera, slice, pose, and scene-content settings shared by both renderers.
+
+    Each line below declares one field. Syntax::
+
+        field_name: type = default_value
+
+    is the same idea as a variable with a type note and default, but grouped
+    inside the class. ``self`` in methods below refers to "this config object".
+    """
 
     atlas_name: str
 
     # Atlas geometry (interactive uses mesh_mode; batch uses regions_to_show)
     mesh_mode: MeshMode = "root"
-    regions_to_show: list[str] | None = None
+    regions_to_show: list[str] | None = None  # None = not used (interactive root/regions mode)
     region_mode: RegionMode = "leaves"
     show_root: bool = True
     root_alpha: float = 0.8
@@ -58,7 +106,7 @@ class ViewConfig:
     plane_depth: float = 0.0
     custom_plane_normal: tuple[float, float, float] = (0.0, 0.0, 1.0)
     close_actors: bool = True
-    slice_cap_color: str | None = "salmon"
+    slice_cap_color: str | None = "salmon"  # str | None = string or "no colour"
 
     # Display
     plotter_axes: int = 0
@@ -72,7 +120,12 @@ class ViewConfig:
         self,
         bounds: tuple[float, float, float, float, float, float],
     ) -> dict:
-        """Build a brainrender camera dict from bounds and this config."""
+        """
+        Build a brainrender camera dict from bounds and this config.
+
+        ``self`` is this ViewConfig instance — we read its camera fields and pass
+        them to ``create_camera`` in ``camera_helpers.py``.
+        """
         return create_camera(
             bounds,
             distance_factor=self.camera_distance_factor,
@@ -92,10 +145,17 @@ class ViewConfig:
         default_shader_style: ShaderStyle = BATCH_SHADER_STYLE,
     ) -> ViewConfig:
         """
-        Parse a ``viewer_presets.json`` entry.
+        Parse one object from ``viewer_presets.json`` into a ``ViewConfig``.
 
-        Missing keys use batch-oriented defaults (e.g. frontal azimuth 180°) so
-        existing presets keep the same appearance.
+        **classmethod** — call as ``ViewConfig.from_preset_dict(preset, ...)``,
+        not on an existing instance. ``cls`` is ``ViewConfig``; ``return cls(...)``
+        builds a new frozen config.
+
+        **preset.get("KEY", default)** — like dict lookup, but returns
+        ``default`` if the key is missing (batch presets omit many optional keys).
+
+        The lone ``*`` in the signature forces ``atlas_name=...`` to be passed
+        by name (keyword), not position — avoids mixing up argument order.
         """
         if "REGIONS_TO_SHOW" not in preset:
             raise KeyError("preset must include REGIONS_TO_SHOW")
@@ -111,6 +171,7 @@ class ViewConfig:
         else:
             slice_cap_color = None
 
+        # JSON keys are UPPER_SNAKE; ViewConfig fields are lower_snake — mapped here.
         return cls(
             atlas_name=str(preset.get("ATLAS_NAME", atlas_name)),
             mesh_mode=preset.get("MESH_MODE", "regions"),
