@@ -48,7 +48,7 @@ _REGION_BATCH_SIZE = 256
 
 
 # -----------------------------------------------------------------------------
-# Settings dicts — bridge config block / JSON presets to render code
+# Settings dicts — bridge SETTINGS / JSON presets to render code
 # -----------------------------------------------------------------------------
 
 

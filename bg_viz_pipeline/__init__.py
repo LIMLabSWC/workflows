@@ -5,6 +5,7 @@ Run entrypoints via:
   python -m bg_viz_pipeline.scripts.batch_render
   python -m bg_viz_pipeline.scripts.probes_to_html ...
   python -m bg_viz_pipeline.scripts.list_regions
+  python -m bg_viz_pipeline.scripts.list_cell_counts
 
 3D rendering shared code: bg_viz_pipeline.lib.render
 """

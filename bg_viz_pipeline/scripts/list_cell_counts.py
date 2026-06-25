@@ -99,4 +99,5 @@ for part in SUMMARY_CSV.parts:
 
 out = REPO_ROOT / f"cell_counts_{subject}.svg"
 fig.savefig(out, format="svg", transparent=True, bbox_inches="tight", pad_inches=0.02)
+plt.close(fig)
 print(f"Saved {out}")

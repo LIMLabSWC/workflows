@@ -37,7 +37,7 @@ SETTINGS = {
     "custom_plane_normal": (0.0, 1.0, 0.0),
     "close_actors": True,
     "slice_cap_color": "salmon",
-    "plotter_axes": 9,
+    "plotter_axes": 9,             # 0 = off; 8 or 9 = labelled axes (see scripts/README.md)
     "shader_style": render.INTERACTIVE_SHADER_STYLE,
 }
 

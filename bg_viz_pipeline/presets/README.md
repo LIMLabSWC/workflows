@@ -31,7 +31,7 @@ Script usage and workflow: [`scripts/README.md`](../scripts/README.md).
 | `SLICE_MODE` | string | `"none"` | `"none"`, `"frontal"`, `"horizontal"`, `"sagittal"`, or `"custom"` |
 | `PLANE_DEPTH` | number | `0.0` | Slice position along the plane normal, 0–1 (used when slicing) |
 | `CUSTOM_PLANE_NORMAL` | `[x, y, z]` | `[0, 0, 1]` | Plane direction when `SLICE_MODE` is `"custom"` |
-| `BASE_FRONTAL_AZIMUTH_DEG` | number | `180` | What `CAMERA_ROTATION_DEG = 0` means (interactive default is `0`) |
+| `BASE_FRONTAL_AZIMUTH_DEG` | number | `180` | What `CAMERA_ROTATION_DEG = 0` means (`base_frontal_azimuth_deg: 0.0` in interactive `SETTINGS`) |
 | `SHOW_ROOT` | bool | `true` | Show whole-brain outline behind regions |
 | `ROOT_ALPHA` | number | `0.2` | Root mesh opacity when `SHOW_ROOT` is true |
 | `REGION_ALPHA` | number | `0.2` | Highlighted atlas region opacity |
@@ -135,4 +135,5 @@ Use this to match a figure back to the preset that produced it.
 
 - Duplicate a preset object to try a small change (e.g. `PLANE_DEPTH` or `CAMERA_ROTATION_DEG`).
 - Use `--only-subject` or `--only-subdir` to render a subset while iterating.
-- When copying camera settings from `interactive_render`, include `BASE_FRONTAL_AZIMUTH_DEG` if you use a non-default value there.
+- When copying from `interactive_render`, use the key map in [`scripts/README.md`](../scripts/README.md#configuration-reference) (`camera_rotation_deg` → `CAMERA_ROTATION_DEG`, etc.). Include `BASE_FRONTAL_AZIMUTH_DEG` if you use a non-default `base_frontal_azimuth_deg`.
+- Run `list_regions` to print a ready-made `REGIONS_TO_SHOW` list for a subject.
