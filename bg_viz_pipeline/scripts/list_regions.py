@@ -80,6 +80,28 @@ df = pd.concat(parts, ignore_index=True)
 df[["probe", "shank_n"]] = df["shank"].str.extract(r"^(.+)_shank_(\d+)$")
 df["shank_n"] = df["shank_n"].astype(int)
 
+if df.empty:
+    raise SystemExit(f"No region CSV files found in: {TRACKS}")
+
+# =============================================================================
+# Terminal summary — regions per shank + copy-paste list for presets
+# =============================================================================
+
+print("--------------------------------")
+print("These are the regions per shank:\n")
+for shank_name in sorted(df["shank"].unique()):
+    regions = df.loc[df["shank"] == shank_name, "Region acronym"].tolist()
+    print(f"{shank_name}: {', '.join(regions)}")
+print("--------------------------------\n")
+
+all_unique = []
+for shank_name in sorted(df["shank"].unique()):
+    for acronym in df.loc[df["shank"] == shank_name, "Region acronym"]:
+        if acronym not in all_unique:
+            all_unique.append(acronym)
+preset_list = "[" + ", ".join(f'"{r}"' for r in all_unique) + "]"
+print(f"These are all the unique regions in this brain:\n\n{preset_list}\n")
+
 # =============================================================================
 # Layout: one row of subplots per probe + shared legend column
 # =============================================================================
@@ -155,4 +177,5 @@ for ax in fig.axes:
 
 out = REPO_ROOT / f"probe_regions_{subject}.svg"
 fig.savefig(out, format="svg", transparent=True, bbox_inches="tight", pad_inches=0.02)
+plt.close(fig)
 print(f"Saved {out}")

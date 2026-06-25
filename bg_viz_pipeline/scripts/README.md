@@ -172,6 +172,9 @@ python -m bg_viz_pipeline.scripts.list_regions
 Writes `probe_regions_<subject>.svg` to the **workflows repo root** (alongside
 other figure outputs like `atlas_screenshot_*.png`).
 
+Also prints a terminal summary: regions per shank, then a JSON-style list of all
+unique regions (handy for copying into `REGIONS_TO_SHOW` in a preset).
+
 ### Input
 
 Per-shank CSV files under `segmentation/atlas_space/tracks/` with at least
