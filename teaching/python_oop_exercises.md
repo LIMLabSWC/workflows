@@ -4,7 +4,7 @@ A hands-on path for OOP ideas used in `bg_viz_pipeline` (`@dataclass`,
 `frozen`, `@classmethod`, type hints, settings bundles).
 
 **Which code does this track?** The pipeline uses a **`SETTINGS` dict** in
-`interactive_render.py` and **`settings_from_preset()`** in `lib/render.py`.
+`interactive_render.py` and **`settings_from_preset()`** in `lib/core.py`.
 Parts 0–10 build up to that pattern (dicts in Part 0/8/10; Part 11 reads the
 real files). Parts 6–10 also teach **dataclasses** as the same idea in a
 stricter form.
@@ -213,7 +213,7 @@ class Car:
         self.fuel = fuel
 ```
 
-**Question:** In `lib/render.py`, preset JSON uses keys like `"MESH_MODE": "root"`.
+**Question:** In `lib/core.py`, preset JSON uses keys like `"MESH_MODE": "root"`.
 In `interactive_render.py`, the same idea is `"mesh_mode": "root"` in `SETTINGS`.
 On branch `refactor-to-batch-and-interactive`, `view_config.py` uses
 `MeshMode = Literal["root", "regions"]` — why might you prefer `Literal` over
@@ -413,7 +413,7 @@ print(h)
 **TODO:** Add `from_csv_row(cls, row: list[str])` that expects
 `[address, rooms, "yes"|"no"]`.
 
-**Link to pipeline:** `render.settings_from_preset(...)` in `lib/render.py` does
+**Link to pipeline:** `core.settings_from_preset(...)` in `lib/core.py` does
 the same job for `viewer_presets.json` (JSON UPPER_SNAKE → `SETTINGS`-style
 lower_snake keys).
 
@@ -510,7 +510,7 @@ print(interactive.describe())
 
 Presets use `CAMERA_DISTANCE_FACTOR` in JSON; `SETTINGS` in
 `interactive_render.py` uses `camera_distance_factor`. Your `from_preset` is the
-**translation layer** (same job as `settings_from_preset()` in `render.py`).
+**translation layer** (same job as `settings_from_preset()` in `core.py`).
 
 **TODO:** Add a comment in your file listing 3 field pairs (JSON name → Python name).
 
@@ -522,7 +522,7 @@ Open these files **after** Parts 1–10:
 
 | File | Look for |
 |------|----------|
-| `bg_viz_pipeline/lib/render.py` | constants, `settings_from_preset`, `apply_view` |
+| `bg_viz_pipeline/lib/core.py` | constants, `settings_from_preset`, `apply_view` |
 | `bg_viz_pipeline/scripts/interactive_render.py` | `SETTINGS` dict at top |
 | `bg_viz_pipeline/scripts/batch_render.py` | reads JSON → `settings_from_preset` |
 
@@ -533,7 +533,7 @@ and write the path:
 
 1. Dict key in `SETTINGS` (and its value)
 2. Which function in `main()` receives the whole `SETTINGS` dict first?
-3. Which function in `render.py` reads `config["camera_rotation_deg"]` when
+3. Which function in `core.py` reads `config["camera_rotation_deg"]` when
    building the camera?
 
 ### Exercise 11.2 — Trace one preset key (batch)
@@ -546,8 +546,8 @@ to `apply_view`.
 <summary>Exercise 11.1 — sketch answer (interactive)</summary>
 
 1. `SETTINGS["camera_rotation_deg"]` (e.g. `-45.0`)
-2. `render.apply_view(scene, SETTINGS)` (after `create_scene` / `add_atlas_content`)
-3. `make_camera` → `create_camera` (both in `render.py`; rotation used in
+2. `core.apply_view(scene, SETTINGS)` (after `create_scene` / `add_atlas_content`)
+3. `make_camera` → `create_camera` (both in `core.py`; rotation used in
    `create_camera` as `rotation_deg`)
 
 </details>
@@ -556,16 +556,16 @@ to `apply_view`.
 <summary>Exercise 11.2 — sketch answer (batch)</summary>
 
 1. e.g. `"CAMERA_ROTATION_DEG": -45.0` in `viewer_presets.json`
-2. `render.settings_from_preset(preset)` in `batch_render.render_one` →
+2. `core.settings_from_preset(preset)` in `batch_render.render_one` →
    `settings["camera_rotation_deg"]`
-3. `render.apply_view(scene, settings)` → `make_camera` → `create_camera`
+3. `core.apply_view(scene, settings)` → `make_camera` → `create_camera`
 
 </details>
 
 ### Optional — ViewConfig on the learning branch
 
 If you checked out `refactor-to-batch-and-interactive`, repeat 11.1–11.2 using
-`ViewConfig` / `scene_pipeline.apply_view` instead of `SETTINGS` / `render.apply_view`.
+`ViewConfig` / `scene_pipeline.apply_view` instead of `SETTINGS` / `core.apply_view`.
 
 ---
 

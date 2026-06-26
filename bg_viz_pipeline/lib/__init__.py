@@ -1,1 +1,1 @@
-"""Shared library code lives in render.py."""
+"""Shared library code lives in core.py."""

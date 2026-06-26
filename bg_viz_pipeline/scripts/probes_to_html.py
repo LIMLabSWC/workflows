@@ -47,7 +47,7 @@ import numpy as np
 
 from brainrender import Scene
 from brainrender.actors import Points
-from bg_viz_pipeline.lib.render import (
+from bg_viz_pipeline.lib.core import (
     BATCH_REGION_ALPHA,
     CUSTOM_REGION_COLOR,
     CUSTOM_REGION_ALPHA,

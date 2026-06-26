@@ -11,31 +11,31 @@ import argparse
 import json
 from pathlib import Path
 
-from bg_viz_pipeline.lib import render
+from bg_viz_pipeline.lib import core
 
-render.init_brainrender_settings()
+core.init_brainrender_settings()
 
-ATLAS_NAME = render.DEFAULT_ATLAS_NAME
+ATLAS_NAME = core.DEFAULT_ATLAS_NAME
 BASE_DIR = Path("/media/viktor/DataDrive/use_cases")
 PRESETS_PATH = Path(__file__).resolve().parents[1] / "presets" / "viewer_presets.json"
 
 
 def render_one(preset):
-    settings = render.settings_from_preset(preset, atlas_name=ATLAS_NAME)
-    render.configure_brainrender(settings)
+    settings = core.settings_from_preset(preset, atlas_name=ATLAS_NAME)
+    core.configure_brainrender(settings)
 
     brainreg_dir = BASE_DIR / settings["brainreg_subdir"]
-    subject_id = render.subject_from_folder(brainreg_dir)
+    subject_id = core.subject_from_folder(brainreg_dir)
 
-    scene = render.create_scene(settings, title=subject_id, offscreen=True)
-    render.add_atlas_content(scene, settings)
-    render.print_root_bounds(scene, subject_id)
-    render.add_brainreg_overlays(scene, brainreg_dir, settings)
+    scene = core.create_scene(settings, title=subject_id, offscreen=True)
+    core.add_atlas_content(scene, settings)
+    core.print_root_bounds(scene, subject_id)
+    core.add_brainreg_overlays(scene, brainreg_dir, settings)
 
-    camera = render.apply_view(scene, settings)
-    scene.title = " | ".join(render.batch_png_title_parts(subject_id, settings))
-    render.render_scene(scene, camera, interactive=False)
-    scene.screenshot(name=render.batch_png_filename(subject_id, settings), scale=2)
+    camera = core.apply_view(scene, settings)
+    scene.title = " | ".join(core.batch_png_title_parts(subject_id, settings))
+    core.render_scene(scene, camera, interactive=False)
+    scene.screenshot(name=core.batch_png_filename(subject_id, settings), scale=2)
 
 
 def main():
@@ -51,7 +51,7 @@ def main():
         subdir = preset["BRAINREG_SUBDIR"]
         if args.only_subdir and args.only_subdir not in subdir:
             continue
-        if args.only_subject and args.only_subject not in render.subject_from_folder(Path(subdir)):
+        if args.only_subject and args.only_subject not in core.subject_from_folder(Path(subdir)):
             continue
         render_one(preset)
 

@@ -1,7 +1,7 @@
 # Viewer presets (`viewer_presets.json`)
 
 JSON array consumed by [`batch_render.py`](../scripts/batch_render.py). Each object is
-converted to a settings dict by ``render.settings_from_preset()`` (shared
+converted to a settings dict by ``core.settings_from_preset()`` (shared
 camera/slice/pose/mesh fields with the ``SETTINGS`` dict in
 `interactive_render.py`, plus batch-only keys below; JSON keys are UPPER_SNAKE).
 

@@ -48,7 +48,7 @@ keys in the ``SETTINGS`` dict (e.g. `CAMERA_ROTATION_DEG` → `camera_rotation_d
 |---------|---------------|--------------|
 | `mesh_mode` | `"root"` \| `"regions"` | Whole-brain shell vs atlas regions |
 | `region_mode` | `"leaves"` \| `"all"` | Which regions when `mesh_mode == "regions"` |
-| `root_alpha` / `region_alpha` | float | Mesh opacity (interactive defaults from `render.py`) |
+| `root_alpha` / `region_alpha` | float | Mesh opacity (interactive defaults from `core.py`) |
 | `subject_pose` | `"on_base"` \| `"on_bulb"` \| `"on_side"` | Specimen mounting |
 | `camera_distance_factor` | float | Zoom (larger = farther) |
 | `camera_rotation_deg` | float | Orbit left/right |
@@ -146,7 +146,7 @@ Tune by eye; these are reasonable first guesses:
 # re-tune camera_* as needed
 ```
 
-If a pose looks flipped, edit ``POSE_ROTATIONS_DEG`` in [`lib/render.py`](../lib/render.py).
+If a pose looks flipped, edit ``POSE_ROTATIONS_DEG`` in [`lib/core.py`](../lib/core.py).
 
 ### Screenshots
 
@@ -183,7 +183,7 @@ Output PNGs are written to the current directory. Filenames encode subject, came
 
 **Note:** Batch presets default to `BASE_FRONTAL_AZIMUTH_DEG = 180` when omitted. Interactive `SETTINGS` uses `base_frontal_azimuth_deg: 0.0` — set the same value in both when copying camera settings.
 
-Both scripts use [`lib/render.py`](../lib/render.py): `apply_view` runs pose → camera → slice
+Both scripts use [`lib/core.py`](../lib/core.py): `apply_view` runs pose → camera → slice
 and sets `plotter_axes` from the preset / ``SETTINGS`` dict (batch default `9`, same as the
 old `brainreg_viewer`; set `PLOTTER_AXES: 0` to hide). Batch presets default `CLOSE_ACTORS`
 to `false` (`close_actors` in the settings dict); set `true` + `SLICE_CAP_COLOR` to match
@@ -296,10 +296,10 @@ All 3D rendering shared by `interactive_render` and `batch_render` lives in one 
 
 | Module | Role |
 |--------|------|
-| [`lib/render.py`](../lib/render.py) | Constants, settings dicts, camera, pose, slice, scene setup, batch overlays |
+| [`lib/core.py`](../lib/core.py) | Shared constants and functions (`core.*`) |
 
 Figure scripts (`list_regions`, `list_cell_counts`) are standalone — they only
-import `DEFAULT_ATLAS_NAME` from `render.py`.
+import `DEFAULT_ATLAS_NAME` from `core.py`.
 
 **Learning:** [`teaching/python_oop_exercises.md`](../../teaching/python_oop_exercises.md)
 walks through the OOP ideas behind this pipeline. For a modular `ViewConfig`

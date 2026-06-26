@@ -1,9 +1,8 @@
 """
-All shared 3D rendering logic for interactive_render and batch_render.
+Shared library code for interactive_render and batch_render.
 
-Settings are plain dicts (no dataclass). Keys are lower_snake, e.g.
-``config["camera_rotation_deg"]``. JSON presets use UPPER_SNAKE; use
-``settings_from_preset()`` to convert.
+Import as ``from bg_viz_pipeline.lib import core`` — settings dicts, camera,
+pose, slice, scene setup, and batch overlays all live here.
 """
 
 import math

@@ -8,5 +8,5 @@ Run entrypoints via:
   python -m bg_viz_pipeline.scripts.list_cell_counts
   python -m bg_viz_pipeline.scripts.make_white_transparent ...
 
-Shared 3D rendering: bg_viz_pipeline.lib.render
+Shared library: bg_viz_pipeline.lib.core
 """
