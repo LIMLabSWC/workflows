@@ -3,6 +3,9 @@ Shared library code for interactive_render and batch_render.
 
 Import as ``from bg_viz_pipeline.lib import core`` — settings dicts, camera,
 pose, slice, scene setup, and batch overlays all live here.
+
+Most scene functions take a brainrender ``Scene`` (vedo ``Plotter`` underneath)
+and call brainrender/vedo APIs; camera math and filename helpers are plain Python.
 """
 
 import math
@@ -116,7 +119,10 @@ def _center_and_extent(bounds):
 
 
 def create_camera(bounds, distance_factor, base_frontal_azimuth_deg, rotation_deg, elevation_deg):
-    """Build brainrender camera dict. Total azimuth = base + rotation."""
+    """Build camera dict for ``Scene.render(camera=...)``. Total azimuth = base + rotation.
+
+    Pure math — brainrender/vedo only consume the returned dict.
+    """
     center, max_extent = _center_and_extent(bounds)
     cx, cy, cz = center
     distance = distance_factor * max_extent
@@ -138,7 +144,10 @@ def create_camera(bounds, distance_factor, base_frontal_azimuth_deg, rotation_de
 
 
 def make_camera(config, bounds):
-    """Build a camera dict from ``config`` camera fields and scene ``bounds``."""
+    """Build a camera dict from ``config`` camera fields and scene ``bounds``.
+
+    Feeds ``create_camera``; result is passed to ``scene.render(camera=...)``.
+    """
     return create_camera(
         bounds,
         config["camera_distance_factor"],
@@ -160,7 +169,10 @@ def bounds_center(bounds):
 
 
 def union_bounds(scene):
-    """Return union bounding box of all actors, or ``None`` if the scene is empty."""
+    """Return union bounding box of all actors, or ``None`` if the scene is empty.
+
+    Uses ``scene.clean_actors`` and vedo ``mesh.bounds()`` on each brainrender actor.
+    """
     xs, ys, zs = [], [], []
     for actor in scene.clean_actors:
         mesh = getattr(actor, "_mesh", None) or actor.mesh
@@ -220,7 +232,7 @@ def rotate_vector(vector, pose):
 
 
 def _rotate_mesh_about_center(mesh, center, pose):
-    """Rotate ``mesh`` in place about ``center``; no-op for ``on_base``."""
+    """Rotate vedo ``mesh`` in place about ``center``; no-op for ``on_base``."""
     if pose == "on_base":
         return
     r = _pose_rotation_matrix(pose)
@@ -230,7 +242,10 @@ def _rotate_mesh_about_center(mesh, center, pose):
 
 
 def apply_subject_pose(scene, pose, center):
-    """Rotate all scene meshes (and silhouettes) about ``center`` for mounting pose."""
+    """Rotate all scene meshes (and silhouettes) about ``center`` for mounting pose.
+
+    Mutates vedo meshes on ``scene.clean_actors`` (not the camera).
+    """
     for actor in scene.clean_actors:
         mesh = getattr(actor, "_mesh", None) or actor.mesh
         _rotate_mesh_about_center(mesh, center, pose)
@@ -244,7 +259,10 @@ def apply_subject_pose(scene, pose, center):
 
 
 def _leaf_region_acronyms(scene):
-    """Return acronyms of terminal (leaf) atlas regions, excluding ``root``."""
+    """Return acronyms of terminal (leaf) atlas regions, excluding ``root``.
+
+    Reads ``scene.atlas.structures`` (brainrender / BrainGlobe atlas).
+    """
     out = []
     for node in scene.atlas.structures.tree.leaves():
         try:
@@ -257,13 +275,19 @@ def _leaf_region_acronyms(scene):
 
 
 def _all_region_acronyms(scene):
-    """Return every atlas region acronym except ``root``."""
+    """Return every atlas region acronym except ``root``.
+
+    Reads ``scene.atlas.lookup_df`` (brainrender / BrainGlobe atlas).
+    """
     acr = scene.atlas.lookup_df["acronym"].astype(str).tolist()
     return [a for a in acr if a != "root"]
 
 
 def _add_atlas_geometry(scene, mesh_mode, region_mode, root_alpha, region_alpha):
-    """Add whole-brain root or batched region meshes (interactive ``mesh_mode`` path)."""
+    """Add whole-brain root or batched region meshes (interactive ``mesh_mode`` path).
+
+    Uses ``scene.root`` and ``scene.add_brain_region`` (brainrender).
+    """
     if mesh_mode == "root":
         scene.root.alpha(root_alpha)
         return
@@ -281,7 +305,10 @@ def _add_atlas_geometry(scene, mesh_mode, region_mode, root_alpha, region_alpha)
 
 
 def _atlas_plane_normal(scene, slice_mode):
-    """Return atlas frontal / horizontal / sagittal normal from ``slice_mode``."""
+    """Return atlas frontal / horizontal / sagittal normal from ``slice_mode``.
+
+    Reads ``scene.atlas.space.plane_normals`` (brainrender).
+    """
     normals = scene.atlas.space.plane_normals
     if slice_mode not in normals:
         raise ValueError(f"bad SLICE_MODE: {slice_mode!r}")
@@ -311,7 +338,10 @@ def _plane_center_from_depth(bounds, plane_depth, normal):
 
 
 def _cap_mesh_with_color(mesh, cap_color):
-    """Close an open cut mesh and colour new cap faces with ``cap_color``."""
+    """Close an open cut mesh and colour new cap faces with ``cap_color``.
+
+    Uses vedo ``mesh.cap()`` and ``vedo.colors``.
+    """
     n_before = mesh.ncells
     mesh.cap()
     if n_before >= mesh.ncells:
@@ -326,7 +356,11 @@ def _cap_mesh_with_color(mesh, cap_color):
 
 
 def apply_slice(scene, config):
-    """Cut the scene with the configured slice plane; optional coloured cap."""
+    """Cut the scene with the configured slice plane; optional coloured cap.
+
+    Uses ``scene.atlas.get_plane``, ``scene.slice``, and/or vedo ``cut_with_plane``
+    on actor meshes; may touch ``scene.plotter`` when rebuilding silhouettes.
+    """
     slice_mode = config["slice_mode"]
     if slice_mode in (None, "none"):
         return
@@ -357,19 +391,22 @@ def apply_slice(scene, config):
 
 
 def init_brainrender_settings():
-    """Set global brainrender defaults (call once at script import)."""
+    """Set global brainrender ``settings`` module defaults (call once at script import)."""
     settings.LIGHTING = "default"
     settings.SHOW_AXES = False
     settings.SCREENSHOT_TRANSPARENT_BACKGROUND = False
 
 
 def configure_brainrender(config):
-    """Apply per-render settings (shader style) from ``config``."""
+    """Apply per-render brainrender ``settings`` (e.g. ``SHADER_STYLE``) from ``config``."""
     settings.SHADER_STYLE = config["shader_style"]
 
 
 def create_scene(config, title, offscreen=False):
-    """Create a brainrender ``Scene``; batch always loads root mesh for ``SHOW_ROOT``."""
+    """Create a brainrender ``Scene``; batch always loads root mesh for ``SHOW_ROOT``.
+
+    Wraps ``brainrender.Scene``; sets vedo offscreen on ``scene.plotter.window`` when requested.
+    """
     regions = config.get("regions_to_show")
     if regions is not None:
         # Batch path: always load root mesh; SHOW_ROOT toggles visibility in add_atlas_content.
@@ -383,7 +420,10 @@ def create_scene(config, title, offscreen=False):
 
 
 def add_atlas_content(scene, config):
-    """Add atlas meshes: batch region list or interactive ``mesh_mode``."""
+    """Add atlas meshes: batch region list or interactive ``mesh_mode``.
+
+    Uses ``scene.add_brain_region`` and ``scene.root`` (brainrender).
+    """
     regions = config.get("regions_to_show")
     if regions is not None:
         for region in regions:
@@ -404,7 +444,10 @@ def add_atlas_content(scene, config):
 
 
 def apply_view(scene, config):
-    """Apply pose, camera, slice, and axes; return camera dict or ``None``."""
+    """Apply pose, camera, slice, and axes; return camera dict or ``None``.
+
+    Orchestrates local helpers then sets ``scene.plotter.axes`` (vedo).
+    """
     ub = union_bounds(scene)
     if ub is not None:
         apply_subject_pose(scene, config["subject_pose"], bounds_center(ub))
@@ -420,7 +463,7 @@ def apply_view(scene, config):
 
 
 def render_scene(scene, camera, interactive):
-    """Render interactively or offscreen; use ``camera`` when bounds are available."""
+    """Open viewer or offscreen render via ``scene.render`` (brainrender → vedo)."""
     if camera is not None:
         scene.render(camera=camera, interactive=interactive)
     else:
@@ -443,7 +486,10 @@ def subject_from_folder(folder):
 
 
 def print_root_bounds(scene, subject_id):
-    """Print atlas root mesh bounds to stdout (batch debugging aid)."""
+    """Print atlas root mesh bounds to stdout (batch debugging aid).
+
+    Uses ``scene.root.bounds()`` (brainrender actor / vedo mesh).
+    """
     if not hasattr(scene, "root") or scene.root is None:
         return
     xmin, xmax, ymin, ymax, zmin, zmax = scene.root.bounds()
@@ -456,7 +502,10 @@ def print_root_bounds(scene, subject_id):
 
 
 def add_brainreg_overlays(scene, brainreg_dir, config):
-    """Add probe tracks, custom ``.obj`` regions, and subsampled brainmapper cells."""
+    """Add probe tracks, custom ``.obj`` regions, and subsampled brainmapper cells.
+
+    Uses ``scene.add`` with brainrender ``Points`` and vedo mesh paths for ``.obj`` files.
+    """
     atlas_space = Path(brainreg_dir) / "segmentation" / "atlas_space"
     tracks_dir = atlas_space / "tracks"
     regions_dir = atlas_space / "regions"
@@ -522,5 +571,8 @@ def interactive_screenshot_filename(config):
 
 
 def save_screenshot(scene, path, scale=2):
-    """Save the current plotter view to ``path``."""
+    """Save the current plotter view to ``path``.
+
+    Wraps ``scene.screenshot`` (brainrender → vedo ``Plotter``).
+    """
     scene.screenshot(name=path, scale=scale)
