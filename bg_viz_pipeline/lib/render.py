@@ -490,10 +490,9 @@ def _sanitize_filename(s):
     return "".join(c if c.isalnum() or c in ("-", "_", ".") else "_" for c in s)
 
 
-def batch_png_title_parts(subject_id, config):
-    """Build filename/title tokens encoding subject, camera, and slice settings."""
+def _camera_slice_filename_parts(config):
+    """Camera and slice tokens shared by batch and interactive screenshot names."""
     parts = [
-        f"sub-{subject_id}",
         f"dist-{config['camera_distance_factor']:.2f}",
         f"rot-{config['camera_rotation_deg']:.1f}",
         f"el-{config['camera_elevation_deg']:.1f}",
@@ -501,11 +500,16 @@ def batch_png_title_parts(subject_id, config):
     slice_mode = config.get("slice_mode")
     if slice_mode and slice_mode not in ("none", None):
         parts.append(f"slice-{slice_mode}")
+        parts.append(f"depth-{config['plane_depth']:.2f}")
         if slice_mode == "custom":
-            parts.append(f"depth-{config['plane_depth']:.2f}")
             n = config["custom_plane_normal"]
             parts.append(f"n-{n[0]:.2f}_{n[1]:.2f}_{n[2]:.2f}")
     return parts
+
+
+def batch_png_title_parts(subject_id, config):
+    """Build filename/title tokens encoding subject, camera, and slice settings."""
+    return [f"sub-{subject_id}"] + _camera_slice_filename_parts(config)
 
 
 def batch_png_filename(subject_id, config):
@@ -513,17 +517,11 @@ def batch_png_filename(subject_id, config):
     return _sanitize_filename("_".join(batch_png_title_parts(subject_id, config))) + ".png"
 
 
-def maybe_save_atlas_screenshots(scene, config):
-    """After interactive close: save PNG for recognised custom slice normals."""
-    if config.get("slice_mode") != "custom":
-        return
-    n = config["custom_plane_normal"]
-    if n in ((1.0, 0.0, 0.0), (-1.0, 0.0, 0.0)):
-        tag = "frontal"
-    elif n in ((0.0, 0.0, -1.0), (0.0, 0.0, 1.0)):
-        tag = "sagittal"
-    elif n in ((0.0, 1.0, 0.0), (0.0, -1.0, 0.0)):
-        tag = "horizontal"
-    else:
-        return
-    scene.screenshot(name=f"atlas_screenshot_{config['slice_mode']}_{tag}.png", scale=2)
+def interactive_screenshot_filename(config):
+    """PNG filename from ``SETTINGS`` (same camera/slice tokens as batch, no subject id)."""
+    return _sanitize_filename("atlas_" + "_".join(_camera_slice_filename_parts(config))) + ".png"
+
+
+def save_screenshot(scene, path, scale=2):
+    """Save the current plotter view to ``path``."""
+    scene.screenshot(name=path, scale=scale)

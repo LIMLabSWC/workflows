@@ -61,6 +61,8 @@ keys in the ``SETTINGS`` dict (e.g. `CAMERA_ROTATION_DEG` → `camera_rotation_d
 | `slice_cap_color` | colour name or `None` | Cap colour when `close_actors` is True |
 | `plotter_axes` | int | vedo axes (`0` = off; `8` or `9` = labelled cube axes; default `9` in `SETTINGS`) |
 | `shader_style` | `"cartoon"` \| `"plastic"` | brainrender shader |
+| `save_screenshot` | bool | Save PNG on window close (default `false`; interactive only) |
+| `screenshot_path` | string, optional | Override filename (default: batch-style `atlas_*.png` from SETTINGS) |
 
 **JSON ↔ `SETTINGS` key map** (presets use the left column; `interactive_render.py` uses the right):
 
@@ -148,9 +150,18 @@ If a pose looks flipped, edit ``POSE_ROTATIONS_DEG`` in [`lib/render.py`](../lib
 
 ### Screenshots
 
-With `slice_mode == "custom"` and a recognised `custom_plane_normal`, closing
-the window saves `atlas_screenshot_<mode>_<view>.png` in the current directory
-(see `maybe_save_atlas_screenshots` in `lib/render.py`).
+Set `save_screenshot: true` in the ``SETTINGS`` dict (or `save_screenshot` key in
+`interactive_render.py`). When you **close** the window, a PNG is written to the
+current directory.
+
+- **Filename** — built from ``SETTINGS`` at launch (same tokens as batch:
+  `dist`, `rot`, `el`, `slice`, `depth`, and `n-x_y_z` for custom planes).
+  Override with `screenshot_path`.
+- **Image** — whatever is on screen when you close (including orbit/zoom in the
+  GUI). If you moved the camera, the picture may **not** match `rot` / `el` in
+  the filename.
+
+With `save_screenshot: false` (default), the interactive window opens with no save.
 
 ---
 
@@ -203,7 +214,7 @@ python -m bg_viz_pipeline.scripts.list_regions
 ```
 
 Writes `probe_regions_<subject>.svg` to the **workflows repo root** (alongside
-other figure outputs like `atlas_screenshot_*.png`).
+other figure outputs like `atlas_*.png`).
 
 **Terminal output:** regions per shank, then a JSON-style list of all unique
 regions — copy into `REGIONS_TO_SHOW` in a preset (see [`presets/README.md`](../presets/README.md)).

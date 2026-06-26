@@ -39,6 +39,8 @@ SETTINGS = {
     "slice_cap_color": "salmon",
     "plotter_axes": 9,             # 0 = off; 8 or 9 = labelled axes (see scripts/README.md)
     "shader_style": render.INTERACTIVE_SHADER_STYLE,
+    "save_screenshot": False,      # on close: save PNG (filename from SETTINGS below)
+    # "screenshot_path": "my_view.png",  # optional; default: batch-style atlas_*.png
 }
 
 
@@ -48,7 +50,15 @@ def main():
     render.add_atlas_content(scene, SETTINGS)
     camera = render.apply_view(scene, SETTINGS)
     render.render_scene(scene, camera, interactive=True)
-    render.maybe_save_atlas_screenshots(scene, SETTINGS)
+    if SETTINGS.get("save_screenshot"):
+        path = SETTINGS.get("screenshot_path") or render.interactive_screenshot_filename(SETTINGS)
+        render.save_screenshot(scene, path)
+        print(f"Saved {path}")
+        print(
+            "Filename encodes SETTINGS at launch (camera + slice). "
+            "The PNG shows the view when you closed the window — if you orbited "
+            "or zoomed, the image may not match dist/rot/el in the name."
+        )
 
 
 if __name__ == "__main__":
