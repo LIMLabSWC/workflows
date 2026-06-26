@@ -107,6 +107,7 @@ def settings_from_preset(preset, atlas_name=DEFAULT_ATLAS_NAME):
 
 
 def _center_and_extent(bounds):
+    """Return ``(center, max_extent)`` from a 6-tuple bounding box."""
     xmin, xmax, ymin, ymax, zmin, zmax = bounds
     cx = 0.5 * (xmin + xmax)
     cy = 0.5 * (ymin + ymax)
@@ -138,6 +139,7 @@ def create_camera(bounds, distance_factor, base_frontal_azimuth_deg, rotation_de
 
 
 def make_camera(config, bounds):
+    """Build a camera dict from ``config`` camera fields and scene ``bounds``."""
     return create_camera(
         bounds,
         config["camera_distance_factor"],
@@ -153,11 +155,13 @@ def make_camera(config, bounds):
 
 
 def bounds_center(bounds):
+    """Return ``(cx, cy, cz)`` from ``(xmin, xmax, ymin, ymax, zmin, zmax)``."""
     xmin, xmax, ymin, ymax, zmin, zmax = bounds
     return (0.5 * (xmin + xmax), 0.5 * (ymin + ymax), 0.5 * (zmin + zmax))
 
 
 def union_bounds(scene):
+    """Return union bounding box of all actors, or ``None`` if the scene is empty."""
     xs, ys, zs = [], [], []
     for actor in scene.clean_actors:
         mesh = getattr(actor, "_mesh", None) or actor.mesh
@@ -182,6 +186,7 @@ def union_bounds(scene):
 
 
 def _rotation_matrix_axis(axis, angle_deg):
+    """Return a 3×3 rotation matrix for ``axis`` and ``angle_deg`` (degrees)."""
     x, y, z = axis
     n = math.sqrt(x * x + y * y + z * z)
     if n == 0:
@@ -200,6 +205,7 @@ def _rotation_matrix_axis(axis, angle_deg):
 
 
 def _pose_rotation_matrix(pose):
+    """Return composite rotation for ``on_base``, ``on_bulb``, or ``on_side``."""
     rx, ry, rz = POSE_ROTATIONS_DEG[pose]
     return (
         _rotation_matrix_axis((0.0, 0.0, 1.0), rz)
@@ -209,11 +215,13 @@ def _pose_rotation_matrix(pose):
 
 
 def rotate_vector(vector, pose):
+    """Apply specimen-pose rotation to a 3D vector (e.g. slice plane normal)."""
     v = _pose_rotation_matrix(pose) @ np.asarray(vector, dtype=float)
     return (float(v[0]), float(v[1]), float(v[2]))
 
 
 def _rotate_mesh_about_center(mesh, center, pose):
+    """Rotate ``mesh`` in place about ``center``; no-op for ``on_base``."""
     if pose == "on_base":
         return
     r = _pose_rotation_matrix(pose)
@@ -223,6 +231,7 @@ def _rotate_mesh_about_center(mesh, center, pose):
 
 
 def apply_subject_pose(scene, pose, center):
+    """Rotate all scene meshes (and silhouettes) about ``center`` for mounting pose."""
     for actor in scene.clean_actors:
         mesh = getattr(actor, "_mesh", None) or actor.mesh
         _rotate_mesh_about_center(mesh, center, pose)
@@ -236,6 +245,7 @@ def apply_subject_pose(scene, pose, center):
 
 
 def _leaf_region_acronyms(scene):
+    """Return acronyms of terminal (leaf) atlas regions, excluding ``root``."""
     out = []
     for node in scene.atlas.structures.tree.leaves():
         try:
@@ -248,11 +258,13 @@ def _leaf_region_acronyms(scene):
 
 
 def _all_region_acronyms(scene):
+    """Return every atlas region acronym except ``root``."""
     acr = scene.atlas.lookup_df["acronym"].astype(str).tolist()
     return [a for a in acr if a != "root"]
 
 
 def _add_atlas_geometry(scene, mesh_mode, region_mode, root_alpha, region_alpha):
+    """Add whole-brain root or batched region meshes (interactive ``mesh_mode`` path)."""
     if mesh_mode == "root":
         scene.root.alpha(root_alpha)
         return
@@ -270,6 +282,7 @@ def _add_atlas_geometry(scene, mesh_mode, region_mode, root_alpha, region_alpha)
 
 
 def _atlas_plane_normal(scene, slice_mode):
+    """Return atlas frontal / horizontal / sagittal normal from ``slice_mode``."""
     normals = scene.atlas.space.plane_normals
     if slice_mode not in normals:
         raise ValueError(f"bad SLICE_MODE: {slice_mode!r}")
@@ -277,11 +290,13 @@ def _atlas_plane_normal(scene, slice_mode):
 
 
 def _posed_slice_normal(scene, pose, slice_mode, custom_plane_normal):
+    """Slice plane normal in atlas space, rotated by specimen ``pose``."""
     base = custom_plane_normal if slice_mode == "custom" else _atlas_plane_normal(scene, slice_mode)
     return rotate_vector(base, pose)
 
 
 def _plane_center_from_depth(bounds, plane_depth, normal):
+    """Interpolate plane origin along ``normal``; ``plane_depth`` in 0–1."""
     xmin, xmax, ymin, ymax, zmin, zmax = bounds
     xmid, ymid, zmid = bounds_center(bounds)
     nx, ny, nz = normal
@@ -297,6 +312,7 @@ def _plane_center_from_depth(bounds, plane_depth, normal):
 
 
 def _cap_mesh_with_color(mesh, cap_color):
+    """Close an open cut mesh and colour new cap faces with ``cap_color``."""
     n_before = mesh.ncells
     mesh.cap()
     if n_before >= mesh.ncells:
@@ -311,6 +327,7 @@ def _cap_mesh_with_color(mesh, cap_color):
 
 
 def apply_slice(scene, config):
+    """Cut the scene with the configured slice plane; optional coloured cap."""
     slice_mode = config["slice_mode"]
     if slice_mode in (None, "none"):
         return
@@ -341,16 +358,19 @@ def apply_slice(scene, config):
 
 
 def init_brainrender_settings():
+    """Set global brainrender defaults (call once at script import)."""
     settings.LIGHTING = "default"
     settings.SHOW_AXES = False
     settings.SCREENSHOT_TRANSPARENT_BACKGROUND = False
 
 
 def configure_brainrender(config):
+    """Apply per-render settings (shader style) from ``config``."""
     settings.SHADER_STYLE = config["shader_style"]
 
 
 def create_scene(config, title, offscreen=False):
+    """Create a brainrender ``Scene``; batch always loads root mesh for ``SHOW_ROOT``."""
     regions = config.get("regions_to_show")
     if regions is not None:
         # Batch path: always load root mesh; SHOW_ROOT toggles visibility in add_atlas_content.
@@ -364,6 +384,7 @@ def create_scene(config, title, offscreen=False):
 
 
 def add_atlas_content(scene, config):
+    """Add atlas meshes: batch region list or interactive ``mesh_mode``."""
     regions = config.get("regions_to_show")
     if regions is not None:
         for region in regions:
@@ -384,7 +405,7 @@ def add_atlas_content(scene, config):
 
 
 def apply_view(scene, config):
-    """Pose → camera → slice. Returns camera dict or None."""
+    """Apply pose, camera, slice, and axes; return camera dict or ``None``."""
     ub = union_bounds(scene)
     if ub is not None:
         apply_subject_pose(scene, config["subject_pose"], bounds_center(ub))
@@ -400,6 +421,7 @@ def apply_view(scene, config):
 
 
 def render_scene(scene, camera, interactive):
+    """Render interactively or offscreen; use ``camera`` when bounds are available."""
     if camera is not None:
         scene.render(camera=camera, interactive=interactive)
     else:
@@ -412,6 +434,7 @@ def render_scene(scene, camera, interactive):
 
 
 def subject_from_folder(folder):
+    """Extract subject id from a ``ds_<subject>_...`` brainreg folder name."""
     name = Path(folder).name
     if name.startswith("ds_"):
         parts = name.split("_")
@@ -421,6 +444,7 @@ def subject_from_folder(folder):
 
 
 def print_root_bounds(scene, subject_id):
+    """Print atlas root mesh bounds to stdout (batch debugging aid)."""
     if not hasattr(scene, "root") or scene.root is None:
         return
     xmin, xmax, ymin, ymax, zmin, zmax = scene.root.bounds()
@@ -433,6 +457,7 @@ def print_root_bounds(scene, subject_id):
 
 
 def add_brainreg_overlays(scene, brainreg_dir, config):
+    """Add probe tracks, custom ``.obj`` regions, and subsampled brainmapper cells."""
     atlas_space = Path(brainreg_dir) / "segmentation" / "atlas_space"
     tracks_dir = atlas_space / "tracks"
     regions_dir = atlas_space / "regions"
@@ -461,10 +486,12 @@ def add_brainreg_overlays(scene, brainreg_dir, config):
 
 
 def _sanitize_filename(s):
+    """Replace unsafe filename characters with underscores."""
     return "".join(c if c.isalnum() or c in ("-", "_", ".") else "_" for c in s)
 
 
 def batch_png_title_parts(subject_id, config):
+    """Build filename/title tokens encoding subject, camera, and slice settings."""
     parts = [
         f"sub-{subject_id}",
         f"dist-{config['camera_distance_factor']:.2f}",
@@ -482,10 +509,12 @@ def batch_png_title_parts(subject_id, config):
 
 
 def batch_png_filename(subject_id, config):
+    """Return sanitized batch PNG filename for one preset render."""
     return _sanitize_filename("_".join(batch_png_title_parts(subject_id, config))) + ".png"
 
 
 def maybe_save_atlas_screenshots(scene, config):
+    """After interactive close: save PNG for recognised custom slice normals."""
     if config.get("slice_mode") != "custom":
         return
     n = config["custom_plane_normal"]
