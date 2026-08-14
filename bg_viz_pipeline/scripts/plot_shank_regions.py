@@ -41,9 +41,11 @@ BRAINREG_DIR = Path(
     "/media/viktor/DataDrive/use_cases/ds_ROI-1_230620_102737_25_25_ch02_chan_2_red_2x4shankNPX"
 )
 REPO_ROOT = Path(__file__).resolve().parents[2]
-# Temporary fake CSVs. Real data:
+# Real data:
 # TRACKS = BRAINREG_DIR / "segmentation/atlas_space/tracks"
-TRACKS = Path(__file__).resolve().parent / "fake_tracks"
+
+# Temporary fake CSVs:
+TRACKS = Path("/home/viktor/Documents/fake_tracks")
 
 # --- figure size ---
 PANEL_W = 3.2  # inches per probe panel
