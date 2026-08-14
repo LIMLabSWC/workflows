@@ -40,7 +40,7 @@ OUT_BRAIN = "Not found in brain"  # CSV label outside the atlas
 BRAINREG_DIR = Path(
     "/media/viktor/DataDrive/use_cases/ds_ROI-1_230620_102737_25_25_ch02_chan_2_red_2x4shankNPX"
 )
-REPO_ROOT = Path(__file__).resolve().parents[2]
+REPO_ROOT = Path(__file__).resolve().parents[2]  # …/workflows
 # Real data:
 # TRACKS = BRAINREG_DIR / "segmentation/atlas_space/tracks"
 
@@ -71,7 +71,7 @@ BRACKET_W = 50
 # =============================================================================
 
 atlas = BrainGlobeAtlas(ATLAS_NAME, check_latest=False)
-meta = atlas.lookup_df.set_index("acronym")
+meta = atlas.lookup_df.set_index("acronym")  # rows keyed by e.g. "M2"
 
 
 def rgb01(acronym: str) -> tuple[float, float, float]:
@@ -99,7 +99,7 @@ parts = []
 for csv_path in sorted(TRACKS.glob("*.csv")):
     table = pd.read_csv(csv_path)
     table = table.loc[table["Region acronym"].notna()]
-    table["shank"] = csv_path.stem
+    table["shank"] = csv_path.stem  # e.g. "probe_PFC_shank_1"
     parts.append(table)
 
 if not parts:
@@ -115,23 +115,24 @@ df["shank_n"] = df["shank_n"].astype(int)
 # 3) PROBE GEOMETRY + BANK DEPTHS
 # =============================================================================
 
-np2 = build_neuropixels_probe(NP2_PART)
+np2 = build_neuropixels_probe(NP2_PART)  # official NP2.0 layout (all 5120 sites)
 xy = np2.contact_positions  # (N, 2) µm; y≈0 near tip, larger toward base
-shank_ids = np2.shank_ids.astype(int)
-tips = np.asarray(np2.annotations["shank_tips"], float)
+shank_ids = np2.shank_ids.astype(int)  # 0..3 which shank each contact is on
+tips = np.asarray(np2.annotations["shank_tips"], float)  # tip (x, y) per shank
 
-# Catalogue bank = electrode_index // 384 (not a SpikeGLX IMRO selection).
-# Bank 3 is shorter (~128 sites); banks 0–2 are full 384.
+# Contact ids look like "s0e127" → split on "e" once → electrode number 127.
+# Catalogue bank = electrode // 384 (not SpikeGLX IMRO). Bank 3 is short (~128 sites).
 elec = np.fromiter((int(cid.split("e", 1)[1]) for cid in np2.contact_ids), int)
-banks = elec // 384
+banks = elec // 384  # which bank each contact belongs to on the silicon
 bank_y = {
+    # bank → (y_min, y_max) on shank 0; same depths on every shank
     int(b): (
         float(xy[(shank_ids == 0) & (banks == b), 1].min()),
         float(xy[(shank_ids == 0) & (banks == b), 1].max()),
     )
     for b in np.unique(banks)
 }
-bracket_x = float(xy[:, 0].max()) + BRACKET_GAP
+bracket_x = float(xy[:, 0].max()) + BRACKET_GAP  # x where ] brackets start
 
 
 # =============================================================================
@@ -142,10 +143,10 @@ def draw_region_bands(ax, track, x0, width, y_tip):
     """Paint one rectangle per consecutive region along the track."""
     dist = track["Distance from first position [um]"].to_numpy(float)
     acr = track["Region acronym"].to_numpy()
-    dmax = float(dist[-1])
+    dmax = float(dist[-1])  # deepest sample → maps to tip
 
     # Run edges: start of region → start of next (no gaps)
-    change = np.flatnonzero(acr[1:] != acr[:-1]) + 1
+    change = np.flatnonzero(acr[1:] != acr[:-1]) + 1  # indices where acronym changes
     starts = np.concatenate([[0], change])
     ends = np.concatenate([change, [len(acr)]])
 
@@ -157,7 +158,7 @@ def draw_region_bands(ax, track, x0, width, y_tip):
         d1 = float(dist[i1]) if i1 < len(dist) else dmax
         # Deepest sample (dmax) at tip; surface (d≈0) higher up.
         # ponytail: rectangles ignore tip taper (~200 µm on ~10 mm shank).
-        y_lo = y_tip + (dmax - d1)
+        y_lo = y_tip + (dmax - d1)  # map track distance → probe y
         height = d1 - d0
         if height <= 0:
             continue
@@ -168,7 +169,7 @@ def draw_region_bands(ax, track, x0, width, y_tip):
                 height,
                 facecolor=rgb01(a),
                 edgecolor="none",
-                zorder=0,
+                zorder=0,  # behind contacts
                 alpha=REGION_ALPHA,
             )
         )
@@ -178,18 +179,18 @@ def draw_bank_brackets(ax, y_lo_view, y_hi_view):
     """Draw ] brackets + 'bank N' labels for banks visible in the zoom window."""
     for b, (y0, y1) in sorted(bank_y.items()):
         if y1 < y_lo_view or y0 > y_hi_view:
-            continue
-        y0c, y1c = max(y0, y_lo_view), min(y1, y_hi_view)
+            continue  # bank fully outside the zoomed view
+        y0c, y1c = max(y0, y_lo_view), min(y1, y_hi_view)  # clip to view
         ax.plot(
             [bracket_x, bracket_x + BRACKET_W, bracket_x + BRACKET_W, bracket_x],
-            [y0c, y0c, y1c, y1c],
+            [y0c, y0c, y1c, y1c],  # ] shape
             color="0.2",
             lw=0.8,
             clip_on=False,
         )
         ax.text(
             bracket_x + BRACKET_W + 8,
-            0.5 * (y0c + y1c),
+            0.5 * (y0c + y1c),  # mid-height of bracket
             f"bank {b}",
             va="center",
             ha="left",
@@ -202,7 +203,7 @@ def draw_bank_brackets(ax, y_lo_view, y_hi_view):
 def style_panel(ax, title, y_lo, y_hi):
     """Zoom, title, hide clutter."""
     ax.set_ylim(y_lo, y_hi)
-    ax.set_xlim(ax.get_xlim()[0], bracket_x + BRACKET_W + 90)
+    ax.set_xlim(ax.get_xlim()[0], bracket_x + BRACKET_W + 90)  # room for labels
     ax.set_title(title, fontsize=FS_TITLE)
     ax.set_xticks([])
     ax.tick_params(labelsize=FS_BANK)
@@ -222,24 +223,24 @@ fig, axes = plt.subplots(
     1,
     len(probes),
     figsize=(PANEL_W * len(probes) + LEGEND_W, FIG_H),
-    squeeze=False,
+    squeeze=False,  # always return a 2D array of axes
 )
 axes = axes[0]
 
 for ax, probe_name in zip(axes, probes):
     sub = df.loc[df["probe"] == probe_name]
-    insert_um = float(sub["Distance from first position [um]"].max())
+    insert_um = float(sub["Distance from first position [um]"].max())  # how deep we zoom
     y_tip0 = float(tips[:, 1].min())
     y_hi_view = y_tip0 + insert_um + 400
 
     # --- 5a) region rectangles (behind everything) ---
     for shank_num in sorted(sub["shank_n"].unique()):
-        si = int(shank_num) - 1
+        si = int(shank_num) - 1  # CSV 1-based → ProbeInterface 0-based
         on = shank_ids == si
         if not on.any():
             continue
         xs = xy[on, 0]
-        x0 = float(xs.min() - 10)
+        x0 = float(xs.min() - 10)  # rectangle left edge (a bit wider than contacts)
         width = float(xs.max() - xs.min() + 20)
         y_tip = float(tips[si, 1])
         track = sub.loc[sub["shank_n"] == shank_num].sort_values(
@@ -249,7 +250,7 @@ for ax, probe_name in zip(axes, probes):
         ax.text(
             xs.mean(),
             y_tip + insert_um + 150,
-            str(shank_num),
+            str(shank_num),  # shank label above the shank
             ha="center",
             va="bottom",
             fontsize=FS_SHANK,
@@ -259,7 +260,7 @@ for ax, probe_name in zip(axes, probes):
     plot_probe(
         np2,
         ax=ax,
-        contacts_colors=["0.25"] * np2.get_contact_count(),
+        contacts_colors=["0.25"] * np2.get_contact_count(),  # plain gray sites
         title=False,
         probe_shape_kwargs={"facecolor": "none", "edgecolor": "0.15", "lw": 0.6},
         contact_kwargs={"lw": 0, "alpha": CONTACT_ALPHA},
@@ -281,15 +282,15 @@ fig.legend(
     [Patch(facecolor=rgb01(a), edgecolor="0.5") for a in ordered],
     [f"{a} — {meta.loc[a, 'name']}" for a in ordered],
     loc="center left",
-    bbox_to_anchor=(1.01, 0.5),
+    bbox_to_anchor=(1.01, 0.5),  # just outside the axes on the right
     frameon=False,
     fontsize=FS_LEGEND,
     title="Regions",
 )
 
-subject = BRAINREG_DIR.name.removeprefix("ds_").split("_")[0]
+subject = BRAINREG_DIR.name.removeprefix("ds_").split("_")[0]  # ds_ROI-1_… → ROI-1
 fig.suptitle(f"NP2.0 4-shank regions — {subject}", fontsize=FS_SUPTITLE)
-fig.patch.set_alpha(0)
+fig.patch.set_alpha(0)  # transparent figure background
 for ax in fig.axes:
     ax.set_facecolor("none")
 
