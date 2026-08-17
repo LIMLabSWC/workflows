@@ -12,7 +12,7 @@ Requires a BrainGlobe conda env (e.g. `brainglobe-env`).
 | [`interactive_render.py`](interactive_render.py) | `SETTINGS` dict at top of file | Interactive window (+ optional PNG) | Tuning slice, camera, pose on the atlas alone |
 | [`batch_render.py`](batch_render.py) | [`presets/viewer_presets.json`](../presets/viewer_presets.json) | One PNG per preset | Batch figures with probes + regions for real subjects |
 | [`probes_to_html.py`](probes_to_html.py) | CLI args | Interactive HTML | Shareable 3D probe view in a browser |
-| [`list_regions.py`](list_regions.py) | `BRAINREG_DIR`, `CELL` at top of file | SVG + terminal region summary | Per-probe region × shank summary tables |
+| [`plot_shank_regions.py`](plot_shank_regions.py) | knobs at top of file | Probe SVG + terminal region summary | Regions drawn on NP2.0 shanks, plus `REGIONS_TO_SHOW` |
 | [`list_cell_counts.py`](list_cell_counts.py) | `SUMMARY_CSV`, `TOP_N` at top of file | SVG in repo root | Bar chart of cellfinder cells per atlas region |
 | [`make_white_transparent.py`](make_white_transparent.py) | CLI: input/output dirs | PNGs with white → alpha | Post-process batch PNGs for figures |
 
@@ -194,48 +194,27 @@ interactive capped slices.
 ```
 <brainreg_dir>/
   segmentation/atlas_space/tracks/*.npy    # required (at least one)
-  segmentation/atlas_space/tracks/*.csv   # optional (region tables per shank; for list_regions)
+  segmentation/atlas_space/tracks/*.csv   # optional (region tables per shank; for plot_shank_regions)
   segmentation/atlas_space/regions/*.obj   # optional
   brainmapper/points/points.npy            # optional
 ```
 
 ---
 
-## `list_regions` — probe region × shank tables
+## `plot_shank_regions` — regions on NP2.0 shanks
 
-Builds a flat summary figure: one table per probe, shanks as columns, brain
-regions as rows. Cells use the same **BrainGlobe structure colours**
-(`rgb_triplet`) as brainrender — not Napari’s default label colormap.
-
-Edit `BRAINREG_DIR` and `CELL` at the top of [`list_regions.py`](list_regions.py), then:
+Edit knobs at the top of [`plot_shank_regions.py`](plot_shank_regions.py), then:
 
 ```bash
-python -m bg_viz_pipeline.scripts.list_regions
+python -m bg_viz_pipeline.scripts.plot_shank_regions
 ```
 
-Writes `probe_regions_<subject>.svg` to the **workflows repo root** (alongside
-other figure outputs like `atlas_*.png`).
+Writes `probe_shanks_<subject>.svg` to the **workflows repo root**.
 
 **Terminal output:** regions per shank, then a JSON-style list of all unique
 regions — copy into `REGIONS_TO_SHOW` in a preset (see [`presets/README.md`](../presets/README.md)).
 
-### Input
-
-Per-shank CSV files under `segmentation/atlas_space/tracks/` with at least
-`Region acronym` (and `Region ID` in the atlas table for row ordering). Same
-files used by `probes_to_html.py` to auto-detect regions. Filename stems must
-follow `probe_<name>_shank_<n>` (e.g. `probe_PFC_shank_1.csv`).
-
-### Figure behaviour
-
-- **Rows / legend:** sorted by atlas region ID (stable hierarchy order;
-  independent of Napari trace direction).
-- **Cells:** coloured if that shank passes through the region; white otherwise.
-- **Layout:** square cells, vertical dividers between shanks, transparent SVG
-  background with tight crop.
-
-Tune `CELL` (inches per grid cell) at the top of the script if the layout is
-too cramped.
+CSV stems: `<probe>_<n>` (e.g. `PFC_1.csv`) or `<probe>_shank_<n>`.
 
 ---
 
@@ -298,8 +277,7 @@ All 3D rendering shared by `interactive_render` and `batch_render` lives in one 
 |--------|------|
 | [`lib/core.py`](../lib/core.py) | Shared constants and functions (`core.*`) |
 
-Figure scripts (`list_regions`, `list_cell_counts`) are standalone — they only
-import `DEFAULT_ATLAS_NAME` from `core.py`.
+Figure scripts (`plot_shank_regions`, `list_cell_counts`) are standalone.
 
 **Learning:** [`teaching/python_oop_exercises.md`](../../teaching/python_oop_exercises.md)
 walks through the OOP ideas behind this pipeline. For a modular `ViewConfig`

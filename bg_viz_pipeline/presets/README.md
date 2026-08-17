@@ -139,4 +139,4 @@ Use this to match a figure back to the preset that produced it.
 - Duplicate a preset object to try a small change (e.g. `PLANE_DEPTH` or `CAMERA_ROTATION_DEG`).
 - Use `--only-subject` or `--only-subdir` to render a subset while iterating.
 - When copying from `interactive_render`, use the key map in [`scripts/README.md`](../scripts/README.md#configuration-reference) (`camera_rotation_deg` → `CAMERA_ROTATION_DEG`, etc.). Include `BASE_FRONTAL_AZIMUTH_DEG` if you use a non-default `base_frontal_azimuth_deg`.
-- Run `list_regions` to print a ready-made `REGIONS_TO_SHOW` list for a subject.
+- Run `plot_shank_regions` to print a ready-made `REGIONS_TO_SHOW` list for a subject.

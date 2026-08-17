@@ -58,12 +58,12 @@ Preset JSON reference: [`presets/README.md`](presets/README.md)
    python -m bg_viz_pipeline.scripts.probes_to_html <atlas> <brainreg_dir> <out.html> [--regions ...]
    ```
 
-3. **Probe region tables (SVG):** edit `BRAINREG_DIR` and `CELL` in
-   `scripts/list_regions.py`, then:
+3. **Probe shank regions (SVG):** edit knobs in
+   `scripts/plot_shank_regions.py`, then:
    ```bash
-   python -m bg_viz_pipeline.scripts.list_regions
+   python -m bg_viz_pipeline.scripts.plot_shank_regions
    ```
-   Output: `probe_regions_<subject>.svg` in the repo root, plus a terminal
+   Output: `probe_shanks_<subject>.svg` in the repo root, plus a terminal
    summary of regions per shank and a copy-paste `REGIONS_TO_SHOW` list.
 
 4. **Cellfinder cells per region (SVG):** edit `SUMMARY_CSV` and `TOP_N` in

@@ -4,14 +4,15 @@ NP2.0 4-shank probe with traversed regions drawn to scale (SVG).
 
 What this script does (in order):
   1. Load atlas colours
-  2. Load per-shank track CSVs (region along depth)
-  3. Load official NP2.0 geometry from ProbeInterface
-  4. For each probe panel:
+  2. Load per-shank track CSVs (region along depth; see TRACK_ZERO)
+  3. Print regions per shank + unique list for presets
+  4. Load official NP2.0 geometry from ProbeInterface
+  5. For each probe panel:
        a. paint region rectangles
        b. overlay probe outline + contacts (plot_probe)
        c. draw bank brackets on the right
        d. zoom to insertion depth
-  5. Add legend + save SVG
+  6. Add per-probe legend (surface → tip) + save SVG
 
 Run from repo root::
 
@@ -38,14 +39,14 @@ NP2_PART = "NP2013"  # Neuropixels 2.0 4-shank catalogue probe
 OUT_BRAIN = "Not found in brain"  # CSV label outside the atlas
 
 BRAINREG_DIR = Path(
-    "/media/viktor/DataDrive/use_cases/ds_ROI-1_230620_102737_25_25_ch02_chan_2_red_2x4shankNPX"
+    "/media/viktor/DataDrive/ds_ROI-1_230620_102737_25_25_ch02_chan_2_red_2x4shankNPX"
 )
 REPO_ROOT = Path(__file__).resolve().parents[2]  # …/workflows
 # Real data:
-# TRACKS = BRAINREG_DIR / "segmentation/atlas_space/tracks"
+TRACKS = BRAINREG_DIR / "segmentation/atlas_space/tracks"
 
 # Temporary fake CSVs:
-TRACKS = Path("/home/viktor/Documents/fake_tracks")
+# TRACKS = Path("/home/viktor/Documents/fake_tracks")
 
 # --- figure size ---
 PANEL_W = 3.2  # inches per probe panel
@@ -65,6 +66,16 @@ CONTACT_ALPHA = 0.4
 BRACKET_GAP = 40  # µm to the right of the probe before the bank bracket
 BRACKET_W = 50
 
+# --- CSV depth mapping ---
+# Track CSV column "Distance from first position [um]" is arc length from the
+# first Napari click. Probe y is 0 at the tip and increases toward the base.
+# Switch this if regions land upside-down on the shank:
+#   "tip"     — first click was the probe tip (deepest); d=0 sits at the tip
+#   "surface" — first click was the brain-surface entry; d=0 sits at the base
+TRACK_ZERO = "tip"
+if TRACK_ZERO not in ("tip", "surface"):
+    raise ValueError(f"TRACK_ZERO must be 'tip' or 'surface', got {TRACK_ZERO!r}")
+
 
 # =============================================================================
 # 1) ATLAS COLOURS
@@ -80,35 +91,63 @@ def rgb01(acronym: str) -> tuple[float, float, float]:
     return tuple(c / 255 for c in atlas.structures[structure_id]["rgb_triplet"])
 
 
-def by_id(acronyms: set[str]) -> list[str]:
-    """Sort acronyms by atlas id (stable legend order)."""
-    return sorted(
-        acronyms,
-        key=lambda a: (int(meta.loc[a, "id"]) if a in meta.index else 10**9, a),
-    )
+def regions_by_depth(sub: pd.DataFrame) -> list[str]:
+    """Unique acronyms on one probe, surface (top of figure) first → tip."""
+    g = sub.loc[
+        sub["Region acronym"].isin(meta.index) & (sub["Region acronym"] != OUT_BRAIN)
+    ]
+    mid = g.groupby("Region acronym")["Distance from first position [um]"].mean()
+    return mid.sort_values(ascending=TRACK_ZERO != "tip").index.tolist()
 
 
 # =============================================================================
 # 2) LOAD TRACK CSVs
 # =============================================================================
-# One file per shank, e.g. probe_PFC_shank_1.csv.
-# "Distance from first position [um]" = arc length along the track.
-# We treat the largest distance as the tip (deep end).
+# One file per shank, e.g. PFC_1.csv or probe_PFC_shank_1.csv.
+# "Distance from first position [um]" = arc length from the first Napari click.
+# Which end that click was is TRACK_ZERO (knobs above).
 
 parts = []
 for csv_path in sorted(TRACKS.glob("*.csv")):
     table = pd.read_csv(csv_path)
     table = table.loc[table["Region acronym"].notna()]
-    table["shank"] = csv_path.stem  # e.g. "probe_PFC_shank_1"
+    table["shank"] = csv_path.stem  # e.g. "PFC_1"
     parts.append(table)
 
 if not parts:
     raise SystemExit(f"No region CSV files found in: {TRACKS}")
 
 df = pd.concat(parts, ignore_index=True)
-# Filename → probe name + shank number (CSV is 1..4; ProbeInterface is 0..3)
-df[["probe", "shank_n"]] = df["shank"].str.extract(r"^(.+)_shank_(\d+)$")
+# Filename → probe + shank (1..4): "PFC_1" or "probe_PFC_shank_1"
+df[["probe", "shank_n"]] = df["shank"].str.extract(r"^(.+?)(?:_shank)?_(\d+)$")
+miss = df["shank_n"].isna()
+if miss.any():
+    raise SystemExit(
+        "CSV stems must be <probe>_<n> or <probe>_shank_<n>, "
+        f"got {sorted(df.loc[miss, 'shank'].unique())}"
+    )
 df["shank_n"] = df["shank_n"].astype(int)
+
+print("--------------------------------")
+print("These are the regions per shank:\n")
+all_unique = []
+for shank_name in sorted(df["shank"].unique()):
+    regions = list(
+        dict.fromkeys(
+            a
+            for a in df.loc[df["shank"] == shank_name, "Region acronym"]
+            if a != OUT_BRAIN
+        )
+    )
+    print(f"{shank_name}: {', '.join(regions)}")
+    for a in regions:
+        if a not in all_unique:
+            all_unique.append(a)
+print("--------------------------------\n")
+print(
+    "These are all the unique regions in this brain:\n\n"
+    f"[{', '.join(f'\"{r}\"' for r in all_unique)}]\n"
+)
 
 
 # =============================================================================
@@ -143,7 +182,7 @@ def draw_region_bands(ax, track, x0, width, y_tip):
     """Paint one rectangle per consecutive region along the track."""
     dist = track["Distance from first position [um]"].to_numpy(float)
     acr = track["Region acronym"].to_numpy()
-    dmax = float(dist[-1])  # deepest sample → maps to tip
+    dmax = float(dist[-1])
 
     # Run edges: start of region → start of next (no gaps)
     change = np.flatnonzero(acr[1:] != acr[:-1]) + 1  # indices where acronym changes
@@ -156,12 +195,12 @@ def draw_region_bands(ax, track, x0, width, y_tip):
             continue
         d0 = float(dist[i0])
         d1 = float(dist[i1]) if i1 < len(dist) else dmax
-        # Deepest sample (dmax) at tip; surface (d≈0) higher up.
-        # ponytail: rectangles ignore tip taper (~200 µm on ~10 mm shank).
-        y_lo = y_tip + (dmax - d1)  # map track distance → probe y
         height = d1 - d0
         if height <= 0:
             continue
+        # Track distance → probe y (0 = tip, larger = toward base).
+        # ponytail: rectangles ignore tip taper (~200 µm on ~10 mm shank).
+        y_lo = y_tip + (d0 if TRACK_ZERO == "tip" else dmax - d1)
         ax.add_patch(
             Rectangle(
                 (x0, y_lo),
@@ -217,8 +256,6 @@ def style_panel(ax, title, y_lo, y_hi):
 # =============================================================================
 
 probes = sorted(df["probe"].unique())
-all_acronyms = {a for a in df["Region acronym"].unique() if a != OUT_BRAIN}
-
 fig, axes = plt.subplots(
     1,
     len(probes),
@@ -277,15 +314,22 @@ for ax, probe_name in zip(axes, probes):
 # 6) LEGEND + SAVE
 # =============================================================================
 
-ordered = by_id(all_acronyms)
+# ponytail: matplotlib legends are one flat list, so probe names are dummy
+# entries (empty swatch). Upgrade: offsetbox / extra axes if headers need styling.
+handles, labels = [], []
+for p in probes:
+    handles.append(Patch(facecolor="none", edgecolor="none"))
+    labels.append(p)
+    for a in regions_by_depth(df.loc[df["probe"] == p]):
+        handles.append(Patch(facecolor=rgb01(a), edgecolor="0.5"))
+        labels.append(f"{a} — {meta.loc[a, 'name']}")
 fig.legend(
-    [Patch(facecolor=rgb01(a), edgecolor="0.5") for a in ordered],
-    [f"{a} — {meta.loc[a, 'name']}" for a in ordered],
+    handles,
+    labels,
     loc="center left",
-    bbox_to_anchor=(1.01, 0.5),  # just outside the axes on the right
+    bbox_to_anchor=(1.01, 0.5),
     frameon=False,
     fontsize=FS_LEGEND,
-    title="Regions",
 )
 
 subject = BRAINREG_DIR.name.removeprefix("ds_").split("_")[0]  # ds_ROI-1_… → ROI-1
