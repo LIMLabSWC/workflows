@@ -27,6 +27,7 @@ the SLURM scripts work and how to run them.
 
 At a minimum:
 - edit `slurm/brainreg_config.sh`
+- put `<ATLAS>_v*` under `~/.brainglobe` (the submitter does not download atlases; see [`slurm/README.md`](slurm/README.md))
 - run `./slurm/submit_brainreg.sh`
 
 ## Phase 2 (Segmentation + probe annotations, Napari)
