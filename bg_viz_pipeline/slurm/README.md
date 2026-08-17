@@ -41,11 +41,12 @@ submit_brainreg.sh
     Run this manually from the shell.
     1. Loads the config
     2. Loads the brainglobe module
-    3. Ensures the atlas is installed
-    4. Scans DATA_DIR for .tif/.tiff files
-    5. Skips samples that already have registered_atlas.tiff
-    6. Writes the remaining inputs to LIST_FILE
-    7. Calls sbatch to launch the SLURM array job
+    3. After module load, points BrainGlobe at BRAINGLOBE_DIR (~/.brainglobe)
+    4. Checks that directory for <ATLAS>_v*
+    5. Scans DATA_DIR for .tif/.tiff files
+    6. Skips samples that already have registered_atlas.tiff
+    7. Writes the remaining inputs to LIST_FILE
+    8. Calls sbatch to launch the SLURM array job
 
 sbatch_brainreg_use_cases.sh
     Run by SLURM, not by hand.
@@ -77,13 +78,36 @@ project/
     └── sbatch_brainreg_use_cases.sh
 ```
 
+## Atlases are local only
+
+The submitter **does not download** an atlas. The previous `BrainGlobeAtlas("${ATLAS}")` check was meant to fetch a missing catalogue atlas from gin; on HPC login nodes that HTTP call has no timeout and hangs, and custom atlases are not in the catalogue anyway. The submitter only lists `BRAINGLOBE_DIR/<ATLAS>_v*` and exits if the folder is missing.
+
+Before you submit:
+
+1. Set `ATLAS` in `brainreg_config.sh` to the BrainGlobe name **without** the `_v*` suffix.
+2. Make sure `BRAINGLOBE_DIR/<ATLAS>_v<version>/` already exists (default `BRAINGLOBE_DIR` is `~/.brainglobe`). Custom and catalogue atlases use the same layout.
+
+To add a catalogue atlas, copy it from the module cache or install it on a machine that can reach gin, then copy the folder in:
+
+```bash
+# shared HPC catalogue (read-only examples)
+# /ceph/apps/application_data/brainglobe/<ATLAS>_v*/
+
+cp -a /ceph/apps/application_data/brainglobe/<ATLAS>_v<version> ~/.brainglobe/
+# or, off-cluster:  brainglobe install -a <ATLAS>
+# then copy ~/.brainglobe/<ATLAS>_v* onto the cluster
+```
+
+`module load brainglobe` points BrainGlobe at `/ceph/apps/application_data/brainglobe`. Both the submitter and the array job then call `apply_user_brainglobe_dir` so `brainreg` sees `BRAINGLOBE_DIR` (your custom atlases) instead of only the shared cache.
+
 ## How to use
 
 1. Put this `slurm/` folder inside your project folder, or symlink it there.
 2. Edit `slurm/brainreg_config.sh`.
 3. Set `PROJECT_DIR` to your project folder.
-4. Submit the workflow by running `./slurm/submit_brainreg.sh`.
-5. Monitor the generated SLURM output/error files as usual.
+4. Set `ATLAS` and install that atlas under `BRAINGLOBE_DIR` (see above).
+5. Submit the workflow by running `./slurm/submit_brainreg.sh`.
+6. Monitor the generated SLURM output/error files as usual.
 
 ## Common mistake
 

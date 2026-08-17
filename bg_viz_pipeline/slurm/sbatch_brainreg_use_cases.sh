@@ -34,6 +34,7 @@ mkdir -p "${OUTPUT_DIR}"
 # ------------------------------------------------------------------------------
 module purge
 module load brainglobe/2025-07-06
+apply_user_brainglobe_dir
 
 command -v brainreg >/dev/null || {
     echo "ERROR: brainreg not found"

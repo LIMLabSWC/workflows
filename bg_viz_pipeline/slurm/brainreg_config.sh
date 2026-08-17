@@ -17,6 +17,23 @@ LIST_FILE="${PROJECT_DIR}/brainreg_filelist.txt"
 ATLAS="whs_sd_swc_female_rat_39um"
 OUTPUT_DIR="${PROJECT_DIR}/brainreg_outputs_${ATLAS}"
 
+# Where <ATLAS>_v* folders live. The HPC module uses
+# /ceph/apps/application_data/brainglobe (shared catalogue), not ~/.brainglobe.
+# Custom atlases are in the user cache; call apply_user_brainglobe_dir after
+# `module load` so BrainGlobe/brainreg see them.
+BRAINGLOBE_DIR="${HOME}/.brainglobe"
+
+apply_user_brainglobe_dir() {
+    local cfg_dir="${PROJECT_DIR}/.bg_config"
+    mkdir -p "${cfg_dir}"
+    printf '%s\n' \
+        "[default_dirs]" \
+        "brainglobe_dir = ${BRAINGLOBE_DIR}" \
+        "interm_download_dir = ${BRAINGLOBE_DIR}" \
+        > "${cfg_dir}/bg_config.conf"
+    export BRAINGLOBE_CONFIG_DIR="${cfg_dir}"
+}
+
 # ------------------------------------------------------------------------------
 # Backend and orientation
 # ------------------------------------------------------------------------------

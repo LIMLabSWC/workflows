@@ -17,16 +17,33 @@ source "${SCRIPT_DIR}/brainreg_config.sh"
 mkdir -p "${OUTPUT_DIR}"
 
 # ------------------------------------------------------------------------------
-# Load brainglobe and ensure atlas is available (so we fail fast if not)
+# Fail fast if ATLAS is not already on disk. Do not construct BrainGlobeAtlas:
+# even with check_latest=False, a missing/unseen local folder still calls
+# gin.g-node.org (no HTTP timeout) and hangs on cluster login nodes.
 # ------------------------------------------------------------------------------
 module purge
 module load brainglobe/2025-07-06
+apply_user_brainglobe_dir
 
-echo "Ensuring atlas is installed: ${ATLAS}"
+echo "Ensuring atlas is installed locally: ${ATLAS}"
 python - <<PY
-from brainglobe_atlasapi import BrainGlobeAtlas
-BrainGlobeAtlas("${ATLAS}")
-print("Atlas ready: ${ATLAS}")
+from pathlib import Path
+from brainglobe_atlasapi.config import read_config
+
+name = "${ATLAS}"
+root = Path(read_config()["default_dirs"]["brainglobe_dir"])
+found = sorted(p.name for p in root.glob(name + "_v*") if p.is_dir())
+if len(found) != 1:
+    installed = sorted(p.name for p in root.glob("*_v*") if p.is_dir())
+    listing = "\n  ".join(installed) if installed else "(none)"
+    raise SystemExit(
+        f"Atlas not found locally: {name}\n"
+        f"Looked for: {root}/{name}_v*\n"
+        f"Installed in {root}:\n  {listing}\n"
+        "This submitter does not download atlases. Copy <ATLAS>_v* into "
+        f"{root} first (see slurm/README.md)."
+    )
+print(f"Atlas ready: {root / found[0]}")
 PY
 
 # ------------------------------------------------------------------------------
