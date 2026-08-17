@@ -20,7 +20,7 @@ from vedo import colors as vedo_colors
 # Constants — atlas name, colours, batch vs interactive defaults
 # -----------------------------------------------------------------------------
 
-DEFAULT_ATLAS_NAME = "viktors_tweaked_warp_swc_female_rat_25um"
+DEFAULT_ATLAS_NAME = "manually_corrected_swc_female_rat_25um"
 DEFAULT_BATCH_BASE_FRONTAL_AZIMUTH_DEG = 180.0
 
 BATCH_REGION_ALPHA = 0.2
@@ -29,7 +29,7 @@ BATCH_SHADER_STYLE = "plastic"
 
 INTERACTIVE_ROOT_ALPHA = 0.8
 INTERACTIVE_REGION_ALPHA = 1.0
-INTERACTIVE_SHADER_STYLE = "cartoon"
+INTERACTIVE_SHADER_STYLE = "plastic"
 
 ROOT_COLOR = "grey"
 CUSTOM_REGION_COLOR = "orangered"

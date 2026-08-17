@@ -128,26 +128,20 @@ if miss.any():
     )
 df["shank_n"] = df["shank_n"].astype(int)
 
+hit = (
+    df.loc[df["Region acronym"] != OUT_BRAIN, ["shank", "Region acronym", "Region name"]]
+    .drop_duplicates(["shank", "Region acronym"])
+)
 print("--------------------------------")
 print("These are the regions per shank:\n")
-all_unique = []
-for shank_name in sorted(df["shank"].unique()):
-    regions = list(
-        dict.fromkeys(
-            a
-            for a in df.loc[df["shank"] == shank_name, "Region acronym"]
-            if a != OUT_BRAIN
-        )
-    )
-    print(f"{shank_name}: {', '.join(regions)}")
-    for a in regions:
-        if a not in all_unique:
-            all_unique.append(a)
+for shank, acrs in hit.groupby("shank")["Region acronym"]:
+    print(f"{shank}: {', '.join(acrs)}")
 print("--------------------------------\n")
-print(
-    "These are all the unique regions in this brain:\n\n"
-    f"[{', '.join(f'\"{r}\"' for r in all_unique)}]\n"
-)
+print("These are all the unique regions in this brain:\n")
+uniq = hit.drop_duplicates("Region acronym")
+print("\n".join(uniq["Region acronym"] + " - " + uniq["Region name"]) + "\n")
+
+
 
 
 # =============================================================================
@@ -322,7 +316,7 @@ for p in probes:
     labels.append(p)
     for a in regions_by_depth(df.loc[df["probe"] == p]):
         handles.append(Patch(facecolor=rgb01(a), edgecolor="0.5"))
-        labels.append(f"{a} — {meta.loc[a, 'name']}")
+        labels.append(a)
 fig.legend(
     handles,
     labels,
