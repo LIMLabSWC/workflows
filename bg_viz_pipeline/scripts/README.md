@@ -199,6 +199,22 @@ interactive capped slices.
   brainmapper/points/points.npy            # optional
 ```
 
+### Track naming
+
+All files under `tracks/` (`.npy`, `.csv`, `.points`) must share this stem:
+
+```text
+probe-<id>_shank-<n>
+```
+
+Examples: `probe-PFC_shank-1.npy`, `probe-am-u_shank-4.csv`, `probe-MPX0009_shank-1.npy`.
+
+- `<id>` — probe label; letters, digits, hyphens only (**no underscores**)
+- `<n>` — 1-based shank index (use `shank-1` for single-shank probes)
+
+Parsed by `core.parse_track_stem`. Bad names raise:
+`Check track naming; accepted format: probe-<id>_shank-<n> ...`
+
 ---
 
 ## `plot_shank_regions` — regions on NP2.0 shanks
@@ -214,8 +230,7 @@ Writes `probe_shanks_<subject>.svg` to the **workflows repo root**.
 **Terminal output:** regions per shank, then a JSON-style list of all unique
 regions — copy into `REGIONS_TO_SHOW` in a preset (see [`presets/README.md`](../presets/README.md)).
 
-CSV stems: `<probe>_<n>` (e.g. `PFC_1.csv`) or `<probe>_shank_<n>`.
-
+CSV stems: `probe-<id>_shank-<n>` (see **Track naming** above). Multishank NP2.0 only.
 ---
 
 ## `list_cell_counts` — cellfinder cells per region

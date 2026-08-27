@@ -40,6 +40,9 @@ For each registered subject folder created by Phase 1:
    - `segmentation/atlas_space/tracks/*.csv` (per-shank region tables; from brainreg tracks)
    - optional `segmentation/atlas_space/regions/*.obj`
 
+   Track filenames must be `probe-<id>_shank-<n>` (e.g. `probe-PFC_shank-1.npy`).
+   See [`scripts/README.md`](scripts/README.md#track-naming).
+
 ## Phase 3 (Visualization, Python)
 From the `workflows` repo root (so the `bg_viz_pipeline/` package is
 importable):

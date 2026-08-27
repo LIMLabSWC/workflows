@@ -56,6 +56,7 @@ from bg_viz_pipeline.lib.core import (
     PROBE_RADIUS,
     create_camera,
     init_brainrender_settings,
+    parse_track_stem,
 )
 
 init_brainrender_settings()
@@ -140,17 +141,20 @@ def find_custom_region_meshes(custom_regions_dir: Path) -> list[Path]:
 
 def get_probe_regions(input_dir: Path) -> dict:
     """
-    Return a mapping from probe/shank name (CSV stem) to the
-    ordered list of unique region acronyms encountered along
-    that track.
+    Return a mapping from track stem to the ordered list of unique region
+    acronyms along that track.
 
-    Expects CSV files with at least a "Region acronym" column.
+    Expects CSV files named ``probe-<id>_shank-<n>.csv`` with a
+    "Region acronym" column.
     """
     regions_per_probe: dict[str, list[str]] = {}
     excluded_acronyms = {"Not found in brain"}
 
     for csv_path in sorted(input_dir.glob("*.csv")):
-        probe_name = csv_path.stem  # e.g. "probe_2_shank_1"
+        try:
+            parse_track_stem(csv_path.stem)
+        except ValueError as e:
+            sys.exit(str(e))
         seen: set[str] = set()
         ordered_acronyms: list[str] = []
 
@@ -168,7 +172,7 @@ def get_probe_regions(input_dir: Path) -> dict:
                     ordered_acronyms.append(acr)
 
         if ordered_acronyms:
-            regions_per_probe[probe_name] = ordered_acronyms
+            regions_per_probe[csv_path.stem] = ordered_acronyms
 
     return regions_per_probe
 
@@ -252,19 +256,22 @@ if not tracks_dir.exists():
     print(f"Tracks directory does not exist: {tracks_dir}")
     sys.exit(1)
 
-# Find all .npy files in the tracks directory (regardless of prefix)
+# Find all .npy files in the tracks directory
 track_files = sorted(tracks_dir.glob("*.npy"))
 
 if not track_files:
     print(f"No .npy track files found in: {tracks_dir}")
     sys.exit(1)
 
-for i, tf in enumerate(track_files, start=1):
-    coords = np.load(tf)
+for tf in track_files:
+    try:
+        parse_track_stem(tf.stem)
+    except ValueError as e:
+        sys.exit(str(e))
     scene.add(
         Points(
-            coords,
-            name=f"probe_{i}",
+            np.load(tf),
+            name=tf.stem,
             colors=PROBE_COLOR,
             radius=PROBE_RADIUS,
         )

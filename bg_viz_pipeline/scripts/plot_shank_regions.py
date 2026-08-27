@@ -4,7 +4,7 @@ NP2.0 4-shank probe with traversed regions drawn to scale (SVG).
 
 What this script does (in order):
   1. Load atlas colours
-  2. Load per-shank track CSVs (region along depth; see TRACK_ZERO)
+  2. Load per-shank track CSVs (``probe-<id>_shank-<n>``; see TRACK_ZERO)
   3. Print regions per shank + unique list for presets
   4. Load official NP2.0 geometry from ProbeInterface
   5. For each probe panel:
@@ -28,6 +28,8 @@ from brainglobe_atlasapi import BrainGlobeAtlas
 from matplotlib.patches import Patch, Rectangle
 from probeinterface.neuropixels_tools import build_neuropixels_probe
 from probeinterface.plotting import plot_probe
+
+from bg_viz_pipeline.lib import core
 
 # =============================================================================
 # 0) KNOBS — edit here
@@ -103,30 +105,27 @@ def regions_by_depth(sub: pd.DataFrame) -> list[str]:
 # =============================================================================
 # 2) LOAD TRACK CSVs
 # =============================================================================
-# One file per shank, e.g. PFC_1.csv or probe_PFC_shank_1.csv.
+# One file per shank: probe-<id>_shank-<n>.csv (see core.TRACK_STEM_FORMAT).
 # "Distance from first position [um]" = arc length from the first Napari click.
 # Which end that click was is TRACK_ZERO (knobs above).
 
 parts = []
 for csv_path in sorted(TRACKS.glob("*.csv")):
+    try:
+        probe, shank_n = core.parse_track_stem(csv_path.stem)
+    except ValueError as e:
+        raise SystemExit(e) from e
     table = pd.read_csv(csv_path)
     table = table.loc[table["Region acronym"].notna()]
-    table["shank"] = csv_path.stem  # e.g. "PFC_1"
+    table["probe"] = probe
+    table["shank_n"] = shank_n
+    table["shank"] = csv_path.stem
     parts.append(table)
 
 if not parts:
     raise SystemExit(f"No region CSV files found in: {TRACKS}")
 
 df = pd.concat(parts, ignore_index=True)
-# Filename → probe + shank (1..4): "PFC_1" or "probe_PFC_shank_1"
-df[["probe", "shank_n"]] = df["shank"].str.extract(r"^(.+?)(?:_shank)?_(\d+)$")
-miss = df["shank_n"].isna()
-if miss.any():
-    raise SystemExit(
-        "CSV stems must be <probe>_<n> or <probe>_shank_<n>, "
-        f"got {sorted(df.loc[miss, 'shank'].unique())}"
-    )
-df["shank_n"] = df["shank_n"].astype(int)
 
 hit = (
     df.loc[df["Region acronym"] != OUT_BRAIN, ["shank", "Region acronym", "Region name"]]
@@ -140,6 +139,7 @@ print("--------------------------------\n")
 print("These are all the unique regions in this brain:\n")
 uniq = hit.drop_duplicates("Region acronym")
 print("\n".join(uniq["Region acronym"] + " - " + uniq["Region name"]) + "\n")
+print("REGIONS_TO_SHOW:", list(uniq["Region acronym"]))
 
 
 

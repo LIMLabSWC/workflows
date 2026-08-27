@@ -4,11 +4,15 @@ Shared library code for interactive_render and batch_render.
 Import as ``from bg_viz_pipeline.lib import core`` — settings dicts, camera,
 pose, slice, scene setup, and batch overlays all live here.
 
+Track files under ``segmentation/atlas_space/tracks/`` must be named
+``probe-<id>_shank-<n>`` (see ``parse_track_stem`` / ``TRACK_STEM_FORMAT``).
+
 Most scene functions take a brainrender ``Scene`` (vedo ``Plotter`` underneath)
 and call brainrender/vedo APIs; camera math and filename helpers are plain Python.
 """
 
 import math
+import re
 from pathlib import Path
 
 import numpy as np
@@ -33,11 +37,26 @@ INTERACTIVE_SHADER_STYLE = "plastic"
 
 ROOT_COLOR = "grey"
 CUSTOM_REGION_COLOR = "orangered"
-CUSTOM_REGION_ALPHA = 0.4
-PROBE_COLOR = "chartreuse"
+CUSTOM_REGION_ALPHA = 0.2
+PROBE_COLOR = "chartreuse"  # probes_to_html / single-colour fallback
+PROBE_COLORS = (
+    "#E69F00",  # orange
+    "#56B4E9",  # sky blue
+    "#009E73",  # bluish green
+    "#0072B2",  # blue
+    "#D55E00",  # vermillion
+    "#CC79A7",  # reddish purple
+    "#F0E442",  # yellow
+    "#000000",  # black
+)
 PROBE_RADIUS = 50
 CELLS_COLOR = "palegoldenrod"
 CELLS_RADIUS = 45
+
+# Track files in segmentation/atlas_space/tracks/: probe-<id>_shank-<n>
+# (<id> = no underscores; <n> = 1-based shank). Same stem for .npy / .csv / .points.
+TRACK_STEM_FORMAT = "probe-<id>_shank-<n>"
+_TRACK_STEM_RE = re.compile(r"^probe-([^_]+)_shank-(\d+)$")
 
 # Specimen pose: rotate mesh geometry (not the camera)
 POSE_ROTATIONS_DEG = {
@@ -427,7 +446,7 @@ def add_atlas_content(scene, config):
     regions = config.get("regions_to_show")
     if regions is not None:
         for region in regions:
-            scene.add_brain_region(region, alpha=config["region_alpha"], silhouette=True)
+            scene.add_brain_region(region, alpha=config["region_alpha"], silhouette=False)
         if hasattr(scene, "root") and scene.root is not None:
             if config.get("show_root", True):
                 scene.root.c(ROOT_COLOR).alpha(config["root_alpha"])
@@ -501,18 +520,51 @@ def print_root_bounds(scene, subject_id):
     )
 
 
+def parse_track_stem(stem):
+    """Parse a tracks/ filename stem as ``probe-<id>_shank-<n>``.
+
+    Returns ``(probe_id, shank_n)``. Raises ``ValueError`` if the stem does not
+    match — call this for every ``.npy`` / ``.csv`` / ``.points`` track file.
+    """
+    m = _TRACK_STEM_RE.match(stem)
+    if not m:
+        raise ValueError(
+            f"Check track naming; accepted format: {TRACK_STEM_FORMAT} "
+            f"(e.g. probe-PFC_shank-1). Got {stem!r}."
+        )
+    return m.group(1), int(m.group(2))
+
+
 def add_brainreg_overlays(scene, brainreg_dir, config):
     """Add probe tracks, custom ``.obj`` regions, and subsampled brainmapper cells.
 
     Uses ``scene.add`` with brainrender ``Points`` and vedo mesh paths for ``.obj`` files.
+
+    Returns a list of ``(probe_id, color)`` in first-seen order (for legends).
+    Shanks of the same probe share one colour. Track stems must match
+    ``TRACK_STEM_FORMAT``.
     """
     atlas_space = Path(brainreg_dir) / "segmentation" / "atlas_space"
     tracks_dir = atlas_space / "tracks"
     regions_dir = atlas_space / "regions"
     cells_path = Path(brainreg_dir) / "brainmapper" / "points" / "points.npy"
 
+    color_by_probe = {}
+    legend = []
     for npy_path in sorted(tracks_dir.glob("*.npy")):
-        scene.add(Points(np.load(npy_path), name=npy_path.stem, colors=PROBE_COLOR, radius=PROBE_RADIUS))
+        probe, _shank = parse_track_stem(npy_path.stem)
+        if probe not in color_by_probe:
+            color = PROBE_COLORS[len(color_by_probe) % len(PROBE_COLORS)]
+            color_by_probe[probe] = color
+            legend.append((probe, color))
+        scene.add(
+            Points(
+                np.load(npy_path),
+                name=npy_path.stem,
+                colors=color_by_probe[probe],
+                radius=PROBE_RADIUS,
+            )
+        )
 
     if regions_dir.exists():
         for obj_path in sorted(regions_dir.glob("*.obj")):
@@ -526,6 +578,47 @@ def add_brainreg_overlays(scene, brainreg_dir, config):
             idx = (np.arange(max_pts) * step).astype(int)
             cells = cells[idx]
         scene.add(Points(cells, radius=CELLS_RADIUS, colors=CELLS_COLOR))
+
+    return legend
+
+
+def stamp_probe_legend(png_path, legend):
+    """Overlay a probe colour key on an existing PNG (upper right)."""
+    if not legend:
+        return
+    import matplotlib.pyplot as plt
+    from matplotlib.patches import Patch
+
+    path = Path(png_path)
+    img = plt.imread(path)
+    h, w = img.shape[:2]
+    dpi = 100
+    fig, ax = plt.subplots(figsize=(w / dpi, h / dpi), dpi=dpi)
+    ax.imshow(img)
+    ax.set_axis_off()
+    fig.subplots_adjust(0, 0, 1, 1)
+    handles = [
+        Patch(facecolor=vedo_colors.get_color(c), edgecolor="0.2", label=name)
+        for name, c in legend
+    ]
+    ax.legend(handles=handles, loc="upper right", framealpha=0.9, fontsize=max(8, h // 80))
+    fig.savefig(path, dpi=dpi, pad_inches=0)
+    plt.close(fig)
+
+
+def _check_parse_track_stem():
+    """Runnable check: ``python -c 'from bg_viz_pipeline.lib import core; core._check_parse_track_stem()'``."""
+    assert parse_track_stem("probe-PFC_shank-1") == ("PFC", 1)
+    assert parse_track_stem("probe-am-u_shank-4") == ("am-u", 4)
+    assert parse_track_stem("probe-MPX0009_shank-1") == ("MPX0009", 1)
+    for bad in ("PFC_1", "track_MPX0009", "probe_PFC_shank_1", "probe-PFC", "probe-a_b_shank-1"):
+        try:
+            parse_track_stem(bad)
+        except ValueError as e:
+            assert "Check track naming" in str(e) and TRACK_STEM_FORMAT in str(e)
+        else:
+            raise AssertionError(f"expected ValueError for {bad!r}")
+    print("_check_parse_track_stem: ok")
 
 
 # -----------------------------------------------------------------------------

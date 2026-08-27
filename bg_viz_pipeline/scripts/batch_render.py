@@ -30,12 +30,13 @@ def render_one(preset):
     scene = core.create_scene(settings, title=subject_id, offscreen=True)
     core.add_atlas_content(scene, settings)
     core.print_root_bounds(scene, subject_id)
-    core.add_brainreg_overlays(scene, brainreg_dir, settings)
+    legend = core.add_brainreg_overlays(scene, brainreg_dir, settings)
 
     camera = core.apply_view(scene, settings)
     scene.title = " | ".join(core.batch_png_title_parts(subject_id, settings))
     core.render_scene(scene, camera, interactive=False)
-    scene.screenshot(name=core.batch_png_filename(subject_id, settings), scale=2)
+    png = scene.screenshot(name=core.batch_png_filename(subject_id, settings), scale=2)
+    core.stamp_probe_legend(png, legend)
 
 
 def main():
