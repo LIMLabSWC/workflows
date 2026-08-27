@@ -101,4 +101,5 @@ for part in SUMMARY_CSV.parts:
 out = REPO_ROOT / f"cell_counts_{subject}.svg"
 fig.savefig(out, format="svg", transparent=True, bbox_inches="tight", pad_inches=0.02)
 plt.close(fig)
+print("\n".join(df["acronym"].astype(str) + " - " + df["structure_name"]))
 print(f"Saved {out}")
