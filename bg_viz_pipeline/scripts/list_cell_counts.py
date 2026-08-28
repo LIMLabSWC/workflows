@@ -15,6 +15,7 @@ Run from repo root::
 from pathlib import Path
 
 import matplotlib.pyplot as plt
+from matplotlib.ticker import FuncFormatter
 import pandas as pd
 from brainglobe_atlasapi import BrainGlobeAtlas
 
@@ -84,6 +85,7 @@ ax.axvline(0, color="0.45")
 
 max_count = max(df["left_cell_count"].max(), df["right_cell_count"].max())
 ax.set_xlim(-max_count * 1.08, max_count * 1.08)
+ax.xaxis.set_major_formatter(FuncFormatter(lambda x, _: f"{int(abs(x))}")) # show absolute value of cell count
 ax.set_xlabel("Cell count")
 ax.text(0.01, 1.01, "Left", transform=ax.transAxes, ha="left", va="bottom")
 ax.text(0.99, 1.01, "Right", transform=ax.transAxes, ha="right", va="bottom")
