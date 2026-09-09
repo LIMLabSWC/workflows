@@ -11,3 +11,6 @@ __pycache__/
 
 # bg_viz_pipeline module caches
 bg_viz_pipeline/__pycache__/
+
+# scratch file to collect hardcoded paths
+scratch_paths.txt
