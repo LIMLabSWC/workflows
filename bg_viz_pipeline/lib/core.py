@@ -40,15 +40,29 @@ CUSTOM_REGION_COLOR = "orangered"
 CUSTOM_REGION_ALPHA = 0.2
 PROBE_COLOR = "chartreuse"  # probes_to_html / single-colour fallback
 PROBE_COLORS = (
-    "#E69F00",  # orange
+    "#2060C0",  # royal blue
+    "#E67E00",  # orange
+    "#238B45",  # green
+    "#D62728",  # red
+    "#843CB0",  # purple
+    "#8C564B",  # brown
+    "#DB3494",  # pink
+    "#008B99",  # teal
+    "#A68B00",  # mustard
     "#56B4E9",  # sky blue
-    "#009E73",  # bluish green
-    "#0072B2",  # blue
-    "#D55E00",  # vermillion
-    "#CC79A7",  # reddish purple
-    "#F0E442",  # yellow
-    "#000000",  # black
 )
+
+# Optional category colours: give animals in the same category the same colour.
+# Keys are the IDs in probe-<id>_shank-<n>; colours apply to every shank and
+# every batch preset using that ID. The legend still lists individual IDs.
+# To enable, uncomment this dictionary and switch the colour assignment below.
+# Unlisted IDs keep their automatic palette colours. Edit these example entries.
+# PROBE_COLOR_OVERRIDES = {
+#     "MPX0009": "blue",
+#     "MPX0016": "blue",
+#     "MPX0025": "orange",
+# }
+
 PROBE_RADIUS = 50
 CELLS_COLOR = "palegoldenrod"
 CELLS_RADIUS = 45
@@ -554,7 +568,11 @@ def add_brainreg_overlays(scene, brainreg_dir, config):
     for npy_path in sorted(tracks_dir.glob("*.npy")):
         probe, _shank = parse_track_stem(npy_path.stem)
         if probe not in color_by_probe:
+            # Default: assign colours automatically from the palette.
             color = PROBE_COLORS[len(color_by_probe) % len(PROBE_COLORS)]
+            # For category colours, comment out the line above and uncomment
+            # the line below AND the PROBE_COLOR_OVERRIDES dictionary above.
+            # color = PROBE_COLOR_OVERRIDES.get(probe, PROBE_COLORS[len(color_by_probe) % len(PROBE_COLORS)])
             color_by_probe[probe] = color
             legend.append((probe, color))
         scene.add(
