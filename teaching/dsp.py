@@ -8,8 +8,8 @@ FONT_SIZE = 20
 # ============================================================
 
 signal_frequency = 5    # true signal frequency in Hz
-sampling_rate = 10       # number of measurements per second
-bit_depth = 2           # 1 bit = 2 levels, 2 bits = 4 levels, etc.
+sampling_rate = 40       # number of measurements per second
+bit_depth = 4           # 1 bit = 2 levels, 2 bits = 4 levels, etc.
 duration = 1            # seconds
 
 # ============================================================
@@ -69,10 +69,28 @@ alias_signal = (
 # bit_depth bits → 2^bit_depth discrete levels between 0 and 1
 n_levels = 2 ** bit_depth
 
-# ADC codes: round each sample to an integer level 0 … (n_levels - 1)
-quantized_codes = np.round(sampled_signal * (n_levels - 1))
-# Rescale codes back to [0, 1] for plotting
-quantized_signal = quantized_codes / (n_levels - 1)
+bin_edges = np.linspace(0, 1, n_levels + 1)
+levels = (np.arange(n_levels) + 0.5) / n_levels
+
+# Each code represents a bin's midpoint. At an internal boundary, both
+# neighbouring midpoints are equally close; we choose the upper bin.
+# For 2 bits: [0, 0.25) -> 00, [0.25, 0.5) -> 01, etc.
+# Thus exactly 0.25 maps to code 01, plotted at its midpoint 0.375.
+#
+# Sine evaluation can produce 0.4999999999999999 or 0.5000000000000001
+# where mathematically both samples are 0.5. Round away this numerical
+# noise before choosing a bin, so those samples receive the same code.
+# The previous np.round(sample * (n_levels - 1)) was deterministic too,
+# but these tiny differences put samples on opposite sides of a boundary.
+# At exact ties, np.round uses ties-to-even, not an always-upper rule.
+# ponytail: rounding at 12 decimal places in code units suppresses sine
+# evaluation noise for this demo, but also merges real differences that
+# small; use an ADC's specified thresholds for data.
+scaled_samples = np.round(sampled_signal * n_levels, decimals=12)
+# floor selects the bin (an integer boundary selects the upper bin).
+# Clipping keeps amplitude 1 in the last bin rather than nonexistent code n_levels.
+quantized_codes = np.clip(np.floor(scaled_samples), 0, n_levels - 1).astype(int)
+quantized_signal = levels[quantized_codes]
 
 # ============================================================
 # Plot
@@ -107,14 +125,25 @@ for sample_time in sample_times:
         alpha=0.35
     )
 
-# Allowed levels at this bit depth (quantized values snap here)
-for level in np.linspace(0, 1, n_levels):
+# Input regions and their representative output levels.
+for code, level in enumerate(levels):
+    ax.axhspan(
+        bin_edges[code], bin_edges[code + 1],
+        color="C1", alpha=0.05 if code % 2 == 0 else 0.13, zorder=0,
+    )
     ax.axhline(
         level,
         linestyle=":",
         color="C1",
         alpha=0.4,
     )
+for boundary in bin_edges:
+    ax.axhline(boundary, color="gray", linewidth=0.6, alpha=0.35)
+
+ax.vlines(
+    sample_times, sampled_signal, quantized_signal,
+    color="C1", linewidth=1.5, label="Quantization error",
+)
 
 # Blue dots — exact height of the true signal at each sample time
 ax.scatter(
@@ -128,7 +157,7 @@ ax.scatter(
     label="Exact signal values at sample times",
 )
 
-# Orange dots — stored values after rounding to bit_depth levels
+# Orange dots represent stored codes using the bin midpoints.
 ax.scatter(
     sample_times,
     quantized_signal,
@@ -161,7 +190,16 @@ ax.tick_params(axis="both", labelsize=FONT_SIZE)
 ax.set_xlim(0, duration)
 ax.set_ylim(-0.05, 1.05)
 
-ax.legend(fontsize=FONT_SIZE)
+code_axis = ax.secondary_yaxis("right")
+# Keep labels readable when demonstrating higher bit depths.
+label_stride = max(1, int(np.ceil(n_levels / 8)))
+label_codes = np.arange(0, n_levels, label_stride)
+code_axis.set_yticks(levels[label_codes])
+code_axis.set_yticklabels([format(code, f"0{bit_depth}b") for code in label_codes])
+code_axis.set_ylabel("ADC code (binary)", fontsize=FONT_SIZE)
+code_axis.tick_params(labelsize=FONT_SIZE)
+
+ax.legend(fontsize=11, loc="upper center", bbox_to_anchor=(0.5, -0.18), ncol=2)
 ax.grid(False)
 
 plt.tight_layout()
