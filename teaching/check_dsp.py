@@ -15,7 +15,7 @@ exports = []
 
 
 def check_export(fig, filename, **kwargs):
-    np.testing.assert_allclose(fig.axes[0].get_position().bounds, [0.092, 0.13, 0.793, 0.855])
+    np.testing.assert_allclose(fig.axes[0].get_position().bounds, [0.112, 0.13, 0.773, 0.855])
     target = Path(temp_dir) / Path(filename).name
     savefig(fig, target, **kwargs)
     root = ET.parse(target).getroot()
@@ -34,19 +34,21 @@ samples = plot["sampled_signal"]
 codes = plot["quantized_codes"]
 quantized = plot["quantized_signal"]
 np.testing.assert_allclose(np.diff(plot["bin_edges"]), 1 / n)
-np.testing.assert_allclose(quantized, (codes + 0.5) / n)
+np.testing.assert_allclose(plot["bin_edges"][[0, -1]], [-0.5, 0.5])
+np.testing.assert_allclose(quantized, (codes + 0.5) / n - 0.5)
+assert samples.min() < 0 < samples.max()
 assert np.all((codes >= 0) & (codes < n))
 assert np.all(np.abs(quantized - samples) <= 0.5 / n + 1e-12)
-# The default sine repeatedly hits 0, 0.5 and 1; ties must be consistent.
-for value, expected in [(0, 0), (0.5, n // 2), (1, n - 1)]:
+# Every sine starts at zero; sampling rates need not hit the extrema.
+assert np.isclose(samples[0], 0)
+for value, expected in [(-0.5, 0), (0, n // 2), (0.5, n - 1)]:
     at_boundary = np.isclose(samples, value, rtol=0, atol=1e-14)
-    assert at_boundary.any(), f"Demo no longer samples {value}"
     assert np.all(codes[at_boundary] == expected)
 
 plot["fig"].canvas.draw()
 # Changing slide labels must not move or resize the data area.
 ax = plot["ax"]
-np.testing.assert_allclose(ax.get_position().bounds, [0.092, 0.13, 0.793, 0.855])
+np.testing.assert_allclose(ax.get_position().bounds, [0.112, 0.13, 0.773, 0.855])
 renderer = plot["fig"].canvas.get_renderer()
 figure_bounds = plot["fig"].bbox
 for artist in [ax, ax.get_legend()]:

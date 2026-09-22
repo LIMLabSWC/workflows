@@ -37,10 +37,9 @@ for signal_frequency, sampling_rate, bit_depth, duration in COMBINATIONS:
     # Sine wave: sin(2π f t) oscillates between -1 and +1.
     #   2π f t  — angle in radians; f cycles per second, t in seconds
     #   0.5 * … — scale amplitude to ±0.5
-    #   + 0.5   — shift up so the wave sits between 0 and 1
-    #             (for the plot and quantization)
+    # No offset: the signal is centred on zero, spanning -0.5 to +0.5.
     continuous_signal = (
-        0.5 * np.sin(2 * np.pi * signal_frequency * continuous_time) + 0.5
+        0.5 * np.sin(2 * np.pi * signal_frequency * continuous_time)
     )
 
     # ============================================================
@@ -52,7 +51,7 @@ for signal_frequency, sampling_rate, bit_depth, duration in COMBINATIONS:
 
     # Same sine formula, evaluated only at sample_times
     sampled_signal = (
-        0.5 * np.sin(2 * np.pi * signal_frequency * sample_times) + 0.5
+        0.5 * np.sin(2 * np.pi * signal_frequency * sample_times)
     )
 
     # ============================================================
@@ -75,26 +74,28 @@ for signal_frequency, sampling_rate, bit_depth, duration in COMBINATIONS:
     # Gray curve at alias_frequency — same sample points as the true signal
     # (overlaps the blue curve when there is no aliasing)
     alias_signal = (
-        0.5 * np.sin(2 * np.pi * alias_frequency * continuous_time) + 0.5
+        0.5 * np.sin(2 * np.pi * alias_frequency * continuous_time)
     )
 
     # ============================================================
     # Quantization (bit depth)
     # ============================================================
 
-    # bit_depth bits → 2^bit_depth discrete levels between 0 and 1
+    # bit_depth bits -> 2^bit_depth bins across -0.5 to +0.5 (total range 1).
+    # Unsigned binary codes label the bins, including negative amplitudes;
+    # they are not signed integers or amplitudes themselves.
     n_levels = 2 ** bit_depth
 
-    bin_edges = np.linspace(0, 1, n_levels + 1)
-    levels = (np.arange(n_levels) + 0.5) / n_levels
+    bin_edges = np.linspace(-0.5, 0.5, n_levels + 1)
+    levels = (np.arange(n_levels) + 0.5) / n_levels - 0.5
 
     # Each code represents a bin's midpoint. At an internal boundary, both
     # neighbouring midpoints are equally close; we choose the upper bin.
-    # For 2 bits: [0, 0.25) -> 00, [0.25, 0.5) -> 01, etc.
-    # Thus exactly 0.25 maps to code 01, plotted at its midpoint 0.375.
+    # For 2 bits: [-0.5, -0.25) -> 00, [-0.25, 0) -> 01, etc.
+    # Thus exactly -0.25 maps to code 01, plotted at midpoint -0.125.
     #
-    # Sine evaluation can produce 0.4999999999999999 or 0.5000000000000001
-    # where mathematically both samples are 0.5. Round away this numerical
+    # Sine evaluation can produce tiny positive or negative values
+    # where mathematically both samples are zero. Round away this numerical
     # noise before choosing a bin, so those samples receive the same code.
     # The previous np.round(sample * (n_levels - 1)) was deterministic too,
     # but these tiny differences put samples on opposite sides of a boundary.
@@ -102,9 +103,10 @@ for signal_frequency, sampling_rate, bit_depth, duration in COMBINATIONS:
     # ponytail: rounding at 12 decimal places in code units suppresses sine
     # evaluation noise for this demo, but also merges real differences that
     # small; use an ADC's specified thresholds for data.
-    scaled_samples = np.round(sampled_signal * n_levels, decimals=12)
+    # Shift amplitudes into [0, 1] only to calculate their unsigned bin codes.
+    scaled_samples = np.round((sampled_signal + 0.5) * n_levels, decimals=12)
     # floor selects the bin (an integer boundary selects the upper bin).
-    # Clipping keeps amplitude 1 in the last bin rather than nonexistent code n_levels.
+    # Clipping keeps amplitude +0.5 in the last bin, not nonexistent code n_levels.
     quantized_codes = np.clip(np.floor(scaled_samples), 0, n_levels - 1).astype(int)
     quantized_signal = levels[quantized_codes]
 
@@ -118,7 +120,7 @@ for signal_frequency, sampling_rate, bit_depth, duration in COMBINATIONS:
     # Space is reserved for up to five-bit labels at FONT_SIZE=20, with a small
     # fixed outer padding. Keep these margins identical for the whole slide set.
     # When saving, omit bbox_inches="tight": it would crop each figure differently.
-    fig.subplots_adjust(left=0.092, right=0.885, bottom=0.13, top=0.985)
+    fig.subplots_adjust(left=0.112, right=0.885, bottom=0.13, top=0.985)
 
     # True signal (blue) — what actually happened between sample times
     ax.plot(
@@ -212,7 +214,7 @@ for signal_frequency, sampling_rate, bit_depth, duration in COMBINATIONS:
     ax.tick_params(axis="both", labelsize=FONT_SIZE)
 
     ax.set_xlim(0, duration)
-    ax.set_ylim(-0.05, 1.05)
+    ax.set_ylim(-0.55, 0.55)
 
     code_axis = ax.secondary_yaxis("right")
     # Keep labels readable when demonstrating higher bit depths.
